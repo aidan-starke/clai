@@ -10,7 +10,7 @@ struct Cli {
 
 #[derive(clap::Subcommand)]
 enum Commands {
-    // Add your commands here
+    Test, // Add your commands here
 }
 
 #[tokio::main]
@@ -20,8 +20,12 @@ async fn main() -> anyhow::Result<()> {
     match &cli.command {
         Some(command) => {
             match command {
-                // Handle commands here
-            }
+                Commands::Test => {
+                    println!("Running test command...");
+                    // Add your test command logic here
+                }
+                }
+
         }
         None => {
             println!("Use --help for usage information");
