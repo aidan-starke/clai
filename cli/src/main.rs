@@ -24,8 +24,7 @@ async fn main() -> anyhow::Result<()> {
                     println!("Running test command...");
                     // Add your test command logic here
                 }
-                }
-
+            }
         }
         None => {
             println!("Use --help for usage information");
