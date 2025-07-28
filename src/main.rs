@@ -2,7 +2,6 @@ use clap::Parser;
 use session_manager::SessionManager;
 use std::env;
 use std::io::{self, Write};
-use tracing::debug;
 
 mod db;
 mod server;
@@ -12,7 +11,7 @@ mod session_manager;
 #[command(name = "clai")]
 #[command(about = "A CLI tool for clai")]
 struct Cli {
-    #[arg(long, help = "Resume the last session instead of creating a new one")]
+    #[arg(long, help = "Resume the last session")]
     resume: bool,
     #[arg(long, help = "Resume a specific named session")]
     session: Option<String>,
@@ -20,10 +19,8 @@ struct Cli {
     list: bool,
     #[arg(long, help = "Delete a saved session by name")]
     delete: Option<String>,
-    #[arg(long, help = "Run in server mode")]
+    #[arg(long, help = "Run server")]
     server: bool,
-    #[arg(help = "Optional initial message to send to Claude")]
-    message: Option<String>,
 }
 
 #[tokio::main]
@@ -52,14 +49,6 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let mut session_id = session_manager.get_or_create_session(cli.resume, cli.session.as_deref()).await?;
-
-    // Send initial message if provided
-    if let Some(initial_message) = cli.message {
-        debug!("Sending initial message: {}", initial_message);
-        let response = session_manager.send_message(session_id, &initial_message).await?;
-        println!("Claude: {}", response);
-        println!("───────────────────────────────────────────────────────────────────");
-    }
 
     // Start interactive conversation loop
     println!("💬 Chat started! Type 'exit', 'quit', or press Ctrl+C to end the conversation.");
