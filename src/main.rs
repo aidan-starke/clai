@@ -9,16 +9,12 @@ mod session_manager;
 
 #[derive(Parser)]
 #[command(name = "clai")]
-#[command(about = "A CLI tool for clai")]
+#[command(about = "Command Line Artificial Interface (CLAI)")]
 struct Cli {
     #[arg(long, help = "Resume the last session")]
     resume: bool,
     #[arg(long, help = "Resume a specific named session")]
     session: Option<String>,
-    #[arg(long, help = "List all saved sessions")]
-    list: bool,
-    #[arg(long, help = "Delete a saved session by name")]
-    delete: Option<String>,
     #[arg(long, help = "Run server")]
     server: bool,
 }
@@ -36,19 +32,7 @@ async fn main() -> anyhow::Result<()> {
 
     let session_manager = SessionManager::new(server_url);
 
-    // Handle list command
-    if cli.list {
-        session_manager.list_sessions().await?;
-        return Ok(());
-    }
-
-    // Handle delete command
-    if let Some(session_name) = cli.delete {
-        session_manager.delete_session(&session_name).await?;
-        return Ok(());
-    }
-
-    let mut session_id = session_manager.get_or_create_session(cli.resume, cli.session.as_deref()).await?;
+    let mut session_id = session_manager.get_or_create_session(cli.session.as_deref()).await?;
 
     // Start interactive conversation loop
     println!("💬 Chat started! Type 'exit', 'quit', or press Ctrl+C to end the conversation.");
@@ -180,8 +164,11 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
 
-                // Send message and get response
+                let bar = indicatif::ProgressBar::new_spinner().with_message("Claude is thinking...");
+                bar.enable_steady_tick(std::time::Duration::from_millis(100));
                 let response = session_manager.send_message(session_id, message).await?;
+                bar.finish_and_clear();
+
                 println!("Claude: {}", response);
                 println!("───────────────────────────────────────────────────────────────────");
             }

@@ -29,16 +29,13 @@ impl SessionManager {
         }
     }
 
-    pub async fn get_or_create_session(&self, resume_last: bool, session_name: Option<&str>) -> Result<i32> {
+    pub async fn get_or_create_session(&self, session_name: Option<&str>) -> Result<i32> {
         if let Some(name) = session_name {
             // Try to get session by name
             self.get_session_by_name(name).await
-        } else if resume_last {
+        } else {
             // Try to get the last session
             self.get_last_session().await
-        } else {
-            // Create a new session
-            self.create_new_session().await
         }
     }
 
