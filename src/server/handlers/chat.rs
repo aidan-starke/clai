@@ -1,4 +1,5 @@
 use crate::db::ClaiDb;
+use crate::handle_db_operation;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
@@ -80,12 +81,6 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
         }
     };
 
-    // Store user message in database after getting history
-    if let Err(e) = db.create_message(session_id, "user", &payload.message) {
-        error!("Failed to store user message: {}", e);
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
-
     let claude_request = ClaudeRequest {
         model: "claude-sonnet-4-20250514".to_string(),
         max_tokens: 1000,
@@ -115,13 +110,10 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let text = claude_response.content.into_iter().map(|c| c.text).collect::<Vec<_>>().join("");
+    handle_db_operation!("store user message", db.create_message(session_id, "user", &payload.message));
 
-    // Store Claude's response in database
-    if let Err(e) = db.create_message(session_id, "assistant", &text) {
-        error!("Failed to store Claude response: {}", e);
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
+    let text = claude_response.content.into_iter().map(|c| c.text).collect::<Vec<_>>().join("");
+    handle_db_operation!("store assistant message", db.create_message(session_id, "assistant", &text));
 
     info!("Successfully processed chat request for session {}", session_id);
 
