@@ -1,11 +1,10 @@
-use crate::db;
+use crate::db::ClaiDb;
 use crate::server::utils;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
     response::Json as JsonResponse,
 };
-use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -26,9 +25,9 @@ pub struct SessionResponse {
 pub async fn create_session(Json(payload): Json<CreateSessionRequest>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Creating new session with name: {}", payload.name);
 
-    let mut conn = db::establish_connection();
+    let mut db = ClaiDb::new();
 
-    match db::create_session(&mut conn, &payload.name, payload.display_name.as_deref()) {
+    match db.create_session(&payload.name, payload.display_name.as_deref()) {
         Ok(session) => {
             info!("Created session with ID: {}, name: {}", session.id, session.name);
 
@@ -51,14 +50,14 @@ pub async fn create_session(Json(payload): Json<CreateSessionRequest>) -> Result
 pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Getting last session");
 
-    let mut conn = db::establish_connection();
+    let mut db = ClaiDb::new();
 
-    match db::get_last_session(&mut conn) {
+    match db.get_last_session() {
         Ok(session) => {
             info!("Found last session: ID {}, name: {}", session.id, session.name);
 
             // Update timestamp to mark as recently accessed
-            if let Err(e) = db::update_session_timestamp(&mut conn, session.id) {
+            if let Err(e) = db.update_session_timestamp(session.id) {
                 tracing::warn!("Failed to update session timestamp: {}", e);
             }
 
@@ -91,9 +90,9 @@ pub async fn save_session(
 ) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Saving session {} with display name: {}", session_id, payload.display_name);
 
-    let mut conn = db::establish_connection();
+    let mut db = ClaiDb::new();
 
-    match db::update_session_display_name(&mut conn, session_id, &payload.display_name) {
+    match db.update_session_display_name(session_id, &payload.display_name) {
         Ok(session) => {
             info!("Saved session {} as '{}'", session_id, payload.display_name);
             let response = SessionResponse {
@@ -113,9 +112,9 @@ pub async fn save_session(
 pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, StatusCode> {
     info!("Listing named sessions");
 
-    let mut conn = db::establish_connection();
+    let mut db = ClaiDb::new();
 
-    match db::list_named_sessions(&mut conn) {
+    match db.list_named_sessions() {
         Ok(sessions) => {
             let response: Vec<SessionResponse> = sessions
                 .into_iter()
@@ -139,14 +138,14 @@ pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, Statu
 pub async fn get_session_by_name(Path(name): Path<String>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Getting session by name: {}", name);
 
-    let mut conn = db::establish_connection();
+    let mut db = ClaiDb::new();
 
-    match db::get_session_by_name(&mut conn, &name) {
+    match db.get_session_by_name(&name) {
         Ok(session) => {
             info!("Found session: {} (ID: {})", name, session.id);
 
             // Update timestamp to mark as recently accessed
-            if let Err(e) = db::update_session_timestamp(&mut conn, session.id) {
+            if let Err(e) = db.update_session_timestamp(session.id) {
                 tracing::warn!("Failed to update session timestamp: {}", e);
             }
 
@@ -171,44 +170,19 @@ pub async fn get_session_by_name(Path(name): Path<String>) -> Result<JsonRespons
 pub async fn delete_session(Path(name): Path<String>) -> Result<JsonResponse<()>, StatusCode> {
     info!("Deleting session by name: {}", name);
 
-    let mut conn = crate::db::establish_connection();
+    let mut db = ClaiDb::new();
 
-    // First get the session to verify it exists
-    match crate::db::get_session_by_name(&mut conn, &name) {
-        Ok(session) => {
-            // Delete messages first (foreign key constraint)
-            match diesel::delete(crate::db::schema::messages::table)
-                .filter(crate::db::schema::messages::session_id.eq(session.id))
-                .execute(&mut conn)
-            {
-                Ok(_) => info!("Deleted messages for session '{}'", name),
-                Err(e) => {
-                    tracing::error!("Failed to delete messages for session '{}': {}", name, e);
-                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                }
-            }
-
-            // Then delete the session
-            match diesel::delete(crate::db::schema::sessions::table)
-                .filter(crate::db::schema::sessions::id.eq(session.id))
-                .execute(&mut conn)
-            {
-                Ok(_) => {
-                    info!("Successfully deleted session '{}'", name);
-                    Ok(JsonResponse(()))
-                }
-                Err(e) => {
-                    tracing::error!("Failed to delete session '{}': {}", name, e);
-                    Err(StatusCode::INTERNAL_SERVER_ERROR)
-                }
-            }
+    match db.delete_session_by_name(&name) {
+        Ok(_) => {
+            info!("Successfully deleted session '{}'", name);
+            Ok(JsonResponse(()))
         }
         Err(DieselError::NotFound) => {
             info!("Session '{}' not found", name);
             Err(StatusCode::NOT_FOUND)
         }
         Err(e) => {
-            tracing::error!("Failed to get session by name: {}", e);
+            tracing::error!("Failed to delete session '{}': {}", name, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

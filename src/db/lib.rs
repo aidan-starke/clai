@@ -4,105 +4,150 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use crate::db::models::{Message, NewMessage, NewSession, Session};
 use crate::db::schema::{messages, sessions};
 
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
-pub fn establish_connection() -> SqliteConnection {
-    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "clai.db".to_string());
-
-    let mut connection = SqliteConnection::establish(&database_url).unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
-
-    // Run migrations
-    connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
-
-    connection
+pub struct ClaiDb {
+    connection: SqliteConnection,
 }
 
-pub fn create_session(conn: &mut SqliteConnection, name: &str, display_name: Option<&str>) -> QueryResult<Session> {
-    let new_session = NewSession { name, display_name };
+impl ClaiDb {
+    pub fn new() -> Self {
+        let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "clai.db".to_string());
 
-    diesel::insert_into(sessions::table).values(&new_session).execute(conn)?;
+        let mut connection = SqliteConnection::establish(&database_url).unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
-    sessions::table.order(sessions::id.desc()).first(conn)
-}
+        // Run migrations
+        connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
 
-pub fn update_session_display_name(conn: &mut SqliteConnection, session_id: i32, display_name: &str) -> QueryResult<Session> {
-    diesel::update(sessions::table.find(session_id))
-        .set(sessions::display_name.eq(display_name))
-        .execute(conn)?;
+        ClaiDb { connection }
+    }
 
-    sessions::table.find(session_id).first(conn)
-}
+    pub fn connection(&mut self) -> &mut SqliteConnection {
+        &mut self.connection
+    }
 
-pub fn update_session_timestamp(conn: &mut SqliteConnection, session_id: i32) -> QueryResult<()> {
-    use chrono::Utc;
+    // === SESSION CRUD OPERATIONS ===
 
-    diesel::update(sessions::table.find(session_id))
-        .set(sessions::updated_at.eq(Utc::now().naive_utc()))
-        .execute(conn)?;
+    // CREATE
+    pub fn create_session(&mut self, name: &str, display_name: Option<&str>) -> QueryResult<Session> {
+        let conn = self.connection();
+        let new_session = NewSession { name, display_name };
 
-    Ok(())
-}
+        diesel::insert_into(sessions::table).values(&new_session).execute(conn)?;
 
-pub fn get_last_session(conn: &mut SqliteConnection) -> QueryResult<Session> {
-    sessions::table.order(sessions::updated_at.desc()).first(conn)
-}
+        sessions::table.order(sessions::id.desc()).first(conn)
+    }
 
-pub fn get_session_by_name(conn: &mut SqliteConnection, name: &str) -> QueryResult<Session> {
-    sessions::table
-        .filter(sessions::display_name.eq(name))
-        .order(sessions::created_at.desc())
-        .first(conn)
-}
+    // READ
+    pub fn get_last_session(&mut self) -> QueryResult<Session> {
+        sessions::table.order(sessions::updated_at.desc()).first(self.connection())
+    }
 
-pub fn list_named_sessions(conn: &mut SqliteConnection) -> QueryResult<Vec<Session>> {
-    sessions::table
-        .filter(sessions::display_name.is_not_null())
-        .order(sessions::created_at.desc())
-        .load(conn)
-}
+    pub fn get_session_by_name(&mut self, name: &str) -> QueryResult<Session> {
+        sessions::table
+            .filter(sessions::display_name.eq(name))
+            .order(sessions::created_at.desc())
+            .first(self.connection())
+    }
 
-pub fn create_message(conn: &mut SqliteConnection, session_id: i32, role: &str, content: &str) -> QueryResult<Message> {
-    let new_message = NewMessage { session_id, role, content };
+    pub fn list_named_sessions(&mut self) -> QueryResult<Vec<Session>> {
+        sessions::table
+            .filter(sessions::display_name.is_not_null())
+            .order(sessions::created_at.desc())
+            .load(self.connection())
+    }
 
-    diesel::insert_into(messages::table).values(&new_message).execute(conn)?;
-
-    messages::table.order(messages::id.desc()).first(conn)
-}
-
-pub fn get_session_messages(conn: &mut SqliteConnection, session_id: i32) -> QueryResult<Vec<Message>> {
-    messages::table
-        .filter(messages::session_id.eq(session_id))
-        .order(messages::created_at.asc())
-        .load(conn)
-}
-
-pub fn cleanup_old_sessions(conn: &mut SqliteConnection) -> QueryResult<usize> {
-    // Get the ID of the most recent session
-    let latest_session_id: Option<i32> = sessions::table
-        .select(sessions::id)
-        .order(sessions::created_at.desc())
-        .first(conn)
-        .optional()?;
-
-    if let Some(keep_session_id) = latest_session_id {
-        // Delete messages from old unnamed sessions first (foreign key constraint)
-        // Only delete sessions that don't have a display_name (are not saved) and are not the most recent
-        let deleted_messages = diesel::delete(messages::table)
-            .filter(
-                messages::session_id
-                    .ne(keep_session_id)
-                    .and(messages::session_id.eq_any(sessions::table.select(sessions::id).filter(sessions::display_name.is_null()))),
-            )
+    // UPDATE
+    pub fn update_session_display_name(&mut self, session_id: i32, display_name: &str) -> QueryResult<Session> {
+        let conn = self.connection();
+        diesel::update(sessions::table.find(session_id))
+            .set(sessions::display_name.eq(display_name))
             .execute(conn)?;
 
-        // Delete old unnamed sessions (preserve named sessions)
-        let deleted_sessions = diesel::delete(sessions::table)
-            .filter(sessions::id.ne(keep_session_id).and(sessions::display_name.is_null()))
+        sessions::table.find(session_id).first(conn)
+    }
+
+    pub fn update_session_timestamp(&mut self, session_id: i32) -> QueryResult<()> {
+        use chrono::Utc;
+
+        diesel::update(sessions::table.find(session_id))
+            .set(sessions::updated_at.eq(Utc::now().naive_utc()))
+            .execute(self.connection())?;
+
+        Ok(())
+    }
+
+    // DELETE
+    pub fn delete_session_by_name(&mut self, name: &str) -> QueryResult<()> {
+        let conn = self.connection();
+
+        // First get the session to verify it exists
+        let session = sessions::table
+            .filter(sessions::display_name.eq(name))
+            .order(sessions::created_at.desc())
+            .first::<Session>(conn)?;
+
+        // Delete messages first (foreign key constraint)
+        diesel::delete(messages::table)
+            .filter(messages::session_id.eq(session.id))
             .execute(conn)?;
 
-        Ok(deleted_messages + deleted_sessions)
-    } else {
-        // No sessions to clean up
-        Ok(0)
+        // Then delete the session
+        diesel::delete(sessions::table).filter(sessions::id.eq(session.id)).execute(conn)?;
+
+        Ok(())
+    }
+
+    pub fn cleanup_old_sessions(&mut self) -> QueryResult<usize> {
+        let conn = self.connection();
+
+        // Get the ID of the most recent session
+        let latest_session_id: Option<i32> = sessions::table
+            .select(sessions::id)
+            .order(sessions::created_at.desc())
+            .first(conn)
+            .optional()?;
+
+        if let Some(keep_session_id) = latest_session_id {
+            // Delete messages from old unnamed sessions first (foreign key constraint)
+            // Only delete sessions that don't have a display_name (are not saved) and are not the most recent
+            let deleted_messages = diesel::delete(messages::table)
+                .filter(
+                    messages::session_id
+                        .ne(keep_session_id)
+                        .and(messages::session_id.eq_any(sessions::table.select(sessions::id).filter(sessions::display_name.is_null()))),
+                )
+                .execute(conn)?;
+
+            // Delete old unnamed sessions (preserve named sessions)
+            let deleted_sessions = diesel::delete(sessions::table)
+                .filter(sessions::id.ne(keep_session_id).and(sessions::display_name.is_null()))
+                .execute(conn)?;
+
+            Ok(deleted_messages + deleted_sessions)
+        } else {
+            // No sessions to clean up
+            Ok(0)
+        }
+    }
+
+    // === MESSAGE CRUD OPERATIONS ===
+
+    // CREATE
+    pub fn create_message(&mut self, session_id: i32, role: &str, content: &str) -> QueryResult<Message> {
+        let conn = self.connection();
+        let new_message = NewMessage { session_id, role, content };
+
+        diesel::insert_into(messages::table).values(&new_message).execute(conn)?;
+
+        messages::table.order(messages::id.desc()).first(conn)
+    }
+
+    // READ
+    pub fn get_session_messages(&mut self, session_id: i32) -> QueryResult<Vec<Message>> {
+        messages::table
+            .filter(messages::session_id.eq(session_id))
+            .order(messages::created_at.asc())
+            .load(self.connection())
     }
 }

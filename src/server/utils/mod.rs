@@ -1,10 +1,11 @@
+use crate::db::ClaiDb;
 use tracing::info;
 
 pub fn cleanup_old_sessions() {
     tokio::spawn(async {
         info!("Starting background database cleanup...");
-        let mut conn = crate::db::establish_connection();
-        match crate::db::cleanup_old_sessions(&mut conn) {
+        let mut db = ClaiDb::new();
+        match db.cleanup_old_sessions() {
             Ok(deleted_count) => {
                 if deleted_count > 0 {
                     info!("Cleaned up {} old database records", deleted_count);

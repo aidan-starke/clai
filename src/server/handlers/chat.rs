@@ -1,3 +1,4 @@
+use crate::db::ClaiDb;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
@@ -49,10 +50,10 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
     })?;
 
     let client = reqwest::Client::new();
-    let mut conn = crate::db::establish_connection();
+    let mut db = ClaiDb::new();
 
     // Get conversation history (before storing the new message)
-    let messages = match crate::db::get_session_messages(&mut conn, session_id) {
+    let messages = match db.get_session_messages(session_id) {
         Ok(msgs) => {
             // Convert database messages to Claude API format
             let mut claude_messages = Vec::new();
@@ -80,7 +81,7 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
     };
 
     // Store user message in database after getting history
-    if let Err(e) = crate::db::create_message(&mut conn, session_id, "user", &payload.message) {
+    if let Err(e) = db.create_message(session_id, "user", &payload.message) {
         error!("Failed to store user message: {}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
@@ -117,7 +118,7 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
     let text = claude_response.content.into_iter().map(|c| c.text).collect::<Vec<_>>().join("");
 
     // Store Claude's response in database
-    if let Err(e) = crate::db::create_message(&mut conn, session_id, "assistant", &text) {
+    if let Err(e) = db.create_message(session_id, "assistant", &text) {
         error!("Failed to store Claude response: {}", e);
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
