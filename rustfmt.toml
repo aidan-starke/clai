@@ -1,0 +1,11 @@
+# Maximum line length
+max_width = 140
+
+# Don't wrap macro calls
+format_macro_matchers = false
+
+# Don't wrap macro bodies
+format_macro_bodies = false
+
+# Keep macro invocations on single lines when possible
+format_macro_invocations = false

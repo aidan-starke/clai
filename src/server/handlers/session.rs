@@ -23,19 +23,14 @@ pub struct SessionResponse {
     pub display_name: Option<String>,
 }
 
-pub async fn create_session(
-    Json(payload): Json<CreateSessionRequest>,
-) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+pub async fn create_session(Json(payload): Json<CreateSessionRequest>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Creating new session with name: {}", payload.name);
 
     let mut conn = db::establish_connection();
 
     match db::create_session(&mut conn, &payload.name, payload.display_name.as_deref()) {
         Ok(session) => {
-            info!(
-                "Created session with ID: {}, name: {}",
-                session.id, session.name
-            );
+            info!("Created session with ID: {}, name: {}", session.id, session.name);
 
             utils::cleanup_old_sessions();
 
@@ -60,10 +55,13 @@ pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusC
 
     match db::get_last_session(&mut conn) {
         Ok(session) => {
-            info!(
-                "Found last session: ID {}, name: {}",
-                session.id, session.name
-            );
+            info!("Found last session: ID {}, name: {}", session.id, session.name);
+
+            // Update timestamp to mark as recently accessed
+            if let Err(e) = db::update_session_timestamp(&mut conn, session.id) {
+                tracing::warn!("Failed to update session timestamp: {}", e);
+            }
+
             let response = SessionResponse {
                 id: session.id,
                 name: session.name,
@@ -91,10 +89,7 @@ pub async fn save_session(
     Path(session_id): Path<i32>,
     Json(payload): Json<SaveSessionRequest>,
 ) -> Result<JsonResponse<SessionResponse>, StatusCode> {
-    info!(
-        "Saving session {} with display name: {}",
-        session_id, payload.display_name
-    );
+    info!("Saving session {} with display name: {}", session_id, payload.display_name);
 
     let mut conn = db::establish_connection();
 
@@ -141,9 +136,7 @@ pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, Statu
     }
 }
 
-pub async fn get_session_by_name(
-    Path(name): Path<String>,
-) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+pub async fn get_session_by_name(Path(name): Path<String>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Getting session by name: {}", name);
 
     let mut conn = db::establish_connection();
@@ -151,6 +144,12 @@ pub async fn get_session_by_name(
     match db::get_session_by_name(&mut conn, &name) {
         Ok(session) => {
             info!("Found session: {} (ID: {})", name, session.id);
+
+            // Update timestamp to mark as recently accessed
+            if let Err(e) = db::update_session_timestamp(&mut conn, session.id) {
+                tracing::warn!("Failed to update session timestamp: {}", e);
+            }
+
             let response = SessionResponse {
                 id: session.id,
                 name: session.name,

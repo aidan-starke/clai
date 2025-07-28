@@ -40,14 +40,8 @@ struct ClaudeContent {
     text: String,
 }
 
-pub async fn chat(
-    Path(session_id): Path<i32>,
-    Json(payload): Json<ChatRequest>,
-) -> Result<JsonResponse<ChatResponse>, StatusCode> {
-    info!(
-        "Chat request for session {} with message: {}",
-        session_id, payload.message
-    );
+pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>) -> Result<JsonResponse<ChatResponse>, StatusCode> {
+    info!("Chat request for session {} with message: {}", session_id, payload.message);
 
     let api_key = env::var("ANTHROPIC_API_KEY").map_err(|e| {
         error!("Failed to get ANTHROPIC_API_KEY: {}", e);
@@ -120,12 +114,7 @@ pub async fn chat(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let text = claude_response
-        .content
-        .into_iter()
-        .map(|c| c.text)
-        .collect::<Vec<_>>()
-        .join("");
+    let text = claude_response.content.into_iter().map(|c| c.text).collect::<Vec<_>>().join("");
 
     // Store Claude's response in database
     if let Err(e) = crate::db::create_message(&mut conn, session_id, "assistant", &text) {
@@ -133,10 +122,7 @@ pub async fn chat(
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
 
-    info!(
-        "Successfully processed chat request for session {}",
-        session_id
-    );
+    info!("Successfully processed chat request for session {}", session_id);
 
     let chat_response = ChatResponse { response: text };
 
