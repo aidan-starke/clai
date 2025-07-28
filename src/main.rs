@@ -56,6 +56,7 @@ async fn main() -> anyhow::Result<()> {
     println!("🗑️ Use '/delete <name>' to delete a saved session.");
     println!("📚 Use '/list' to show all saved sessions.");
     println!("🔄 Use '/resume <name>' to switch to a different session.");
+    println!("🎭 Use '/role <role>' to set role, '/role' to view current role.");
     println!("───────────────────────────────────────────────────────────────────");
 
     loop {
@@ -137,6 +138,45 @@ async fn main() -> anyhow::Result<()> {
                     } else {
                         println!("Usage: /resume <session_name>");
                         continue;
+                    }
+                }
+
+                // Check for role command
+                if message.starts_with("/role") {
+                    if message == "/role" {
+                        // Show current role if just "/role" with no arguments
+                        match session_manager.get_session_info(session_id).await {
+                            Ok(session) => {
+                                if let Some(role) = session.role {
+                                    println!("🎭 Current role: '{}'", role);
+                                } else {
+                                    println!("🎭 No role set (Claude will respond as default assistant)");
+                                }
+                                continue;
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to get session info: {}", e);
+                                continue;
+                            }
+                        }
+                    } else if message.starts_with("/role ") {
+                        let role = message.trim_start_matches("/role ").trim();
+                        if !role.is_empty() {
+                            // Set role
+                            match session_manager.set_role(session_id, Some(role.to_string())).await {
+                                Ok(_) => {
+                                    println!("🎭 Role set to: '{}'", role);
+                                    continue;
+                                }
+                                Err(e) => {
+                                    eprintln!("Failed to set role: {}", e);
+                                    continue;
+                                }
+                            }
+                        } else {
+                            println!("Usage: /role <role_name>");
+                            continue;
+                        }
                     }
                 }
 

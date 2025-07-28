@@ -11,6 +11,7 @@ pub struct Session {
     pub display_name: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+    pub role: Option<String>,
 }
 
 #[derive(Insertable)]
@@ -18,6 +19,7 @@ pub struct Session {
 pub struct NewSession<'a> {
     pub name: &'a str,
     pub display_name: Option<&'a str>,
+    pub role: Option<&'a str>,
 }
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]

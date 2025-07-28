@@ -24,6 +24,8 @@ struct ClaudeRequest {
     model: String,
     max_tokens: i32,
     messages: Vec<ClaudeMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -53,8 +55,11 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
     let client = reqwest::Client::new();
     let mut db = ClaiDb::new();
 
+    // Get session info to check for role
+    let session = handle_db_operation!("get session info", db.get_session_by_id(session_id));
+
     // Get conversation history (before storing the new message)
-    let messages = match db.get_session_messages(session_id) {
+    let mut messages = match db.get_session_messages(session_id) {
         Ok(msgs) => {
             // Convert database messages to Claude API format
             let mut claude_messages = Vec::new();
@@ -64,27 +69,31 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
                     content: msg.content,
                 });
             }
-            // Add the new user message
-            claude_messages.push(ClaudeMessage {
-                role: "user".to_string(),
-                content: payload.message.clone(),
-            });
             claude_messages
         }
         Err(e) => {
             error!("Failed to get session messages: {}", e);
-            // Fallback to just the current message
-            vec![ClaudeMessage {
-                role: "user".to_string(),
-                content: payload.message.clone(),
-            }]
+            // Fallback to empty conversation history
+            Vec::new()
         }
     };
+
+    // Add the new user message
+    messages.push(ClaudeMessage {
+        role: "user".to_string(),
+        content: payload.message.clone(),
+    });
+
+    // Prepare system message if role is set
+    let system_message = session.role.as_ref().map(|role| {
+        format!("You are a {}. Please respond in character and provide expertise relevant to this role.", role)
+    });
 
     let claude_request = ClaudeRequest {
         model: "claude-sonnet-4-20250514".to_string(),
         max_tokens: 1000,
         messages,
+        system: system_message,
     };
 
     let response = client

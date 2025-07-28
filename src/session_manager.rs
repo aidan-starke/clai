@@ -3,10 +3,11 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
-struct SessionResponse {
+pub struct SessionResponse {
     id: i32,
     name: String,
     display_name: Option<String>,
+    pub role: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -148,6 +149,45 @@ impl SessionManager {
         Ok(())
     }
 
+    pub async fn set_role(&self, session_id: i32, role: Option<String>) -> Result<()> {
+        #[derive(Serialize)]
+        struct SetRoleRequest {
+            role: Option<String>,
+        }
+
+        let request = SetRoleRequest { role };
+
+        let response = self
+            .client
+            .put(&format!("{}/sessions/{}/role", self.server_url, session_id))
+            .json(&request)
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            // Success message is handled by the caller
+        } else {
+            anyhow::bail!("Failed to set role: {}", response.status());
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_session_info(&self, session_id: i32) -> Result<SessionResponse> {
+        let response = self
+            .client
+            .get(&format!("{}/sessions/{}", self.server_url, session_id))
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let session: SessionResponse = response.json().await?;
+            Ok(session)
+        } else {
+            anyhow::bail!("Failed to get session info: {}", response.status());
+        }
+    }
+
     pub async fn list_sessions(&self) -> Result<()> {
         let response = self.client.get(&format!("{}/sessions", self.server_url)).send().await?;
 
@@ -166,11 +206,13 @@ impl SessionManager {
         println!("─────────────────");
         for session in sessions {
             if let Some(display_name) = &session.display_name {
-                println!("• {} (ID: {})", display_name, session.id);
+                if let Some(role) = &session.role {
+                    println!("• {} (ID: {}) 🎭 {}", display_name, session.id, role);
+                } else {
+                    println!("• {} (ID: {})", display_name, session.id);
+                }
             }
         }
-        println!("\nUse --session <name> to resume a specific session");
-        println!("Use --resume to continue the most recent session");
 
         Ok(())
     }

@@ -20,11 +20,17 @@ pub struct SessionResponse {
     pub id: i32,
     pub name: String,
     pub display_name: Option<String>,
+    pub role: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct SaveSessionRequest {
     pub display_name: String,
+}
+
+#[derive(Deserialize)]
+pub struct SetRoleRequest {
+    pub role: Option<String>,
 }
 
 // CREATE operations
@@ -43,6 +49,7 @@ pub async fn create_session(Json(payload): Json<CreateSessionRequest>) -> Result
         id: session.id,
         name: session.name,
         display_name: session.display_name,
+        role: session.role,
     };
 
     Ok(JsonResponse(response))
@@ -67,6 +74,7 @@ pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusC
         id: session.id,
         name: session.name,
         display_name: session.display_name,
+        role: session.role,
     };
 
     Ok(JsonResponse(response))
@@ -90,6 +98,7 @@ pub async fn get_session_by_name(Path(name): Path<String>) -> Result<JsonRespons
         id: session.id,
         name: session.name,
         display_name: session.display_name,
+        role: session.role,
     };
 
     Ok(JsonResponse(response))
@@ -108,11 +117,31 @@ pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, Statu
             id: session.id,
             name: session.name,
             display_name: session.display_name,
+            role: session.role,
         })
         .collect();
 
     info!("Found {} named sessions", response.len());
 
+    Ok(JsonResponse(response))
+}
+
+pub async fn get_session_by_id(Path(session_id): Path<i32>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+    info!("Getting session by ID: {}", session_id);
+
+    let mut db = ClaiDb::new();
+
+    let session = handle_db_operation!("get session by id", db.get_session_by_id(session_id));
+    
+    info!("Found session: ID {}, name: {}", session_id, session.name);
+
+    let response = SessionResponse {
+        id: session.id,
+        name: session.name,
+        display_name: session.display_name,
+        role: session.role,
+    };
+    
     Ok(JsonResponse(response))
 }
 
@@ -133,8 +162,31 @@ pub async fn save_session(
         id: session.id,
         name: session.name,
         display_name: session.display_name,
+        role: session.role,
     };
 
+    Ok(JsonResponse(response))
+}
+
+pub async fn set_role(
+    Path(session_id): Path<i32>,
+    Json(payload): Json<SetRoleRequest>,
+) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+    info!("Setting role for session {} to: {:?}", session_id, payload.role);
+
+    let mut db = ClaiDb::new();
+
+    let session = handle_db_operation!("set session role", db.update_session_role(session_id, payload.role.as_deref()));
+    
+    info!("Updated session {} role to: {:?}", session_id, payload.role);
+    
+    let response = SessionResponse {
+        id: session.id,
+        name: session.name,
+        display_name: session.display_name,
+        role: session.role,
+    };
+    
     Ok(JsonResponse(response))
 }
 

@@ -31,7 +31,11 @@ impl ClaiDb {
     // CREATE
     pub fn create_session(&mut self, name: &str, display_name: Option<&str>) -> QueryResult<Session> {
         let conn = self.connection();
-        let new_session = NewSession { name, display_name };
+        let new_session = NewSession { 
+            name, 
+            display_name,
+            role: None,
+        };
 
         diesel::insert_into(sessions::table).values(&new_session).execute(conn)?;
 
@@ -48,6 +52,10 @@ impl ClaiDb {
             .filter(sessions::display_name.eq(name))
             .order(sessions::created_at.desc())
             .first(self.connection())
+    }
+
+    pub fn get_session_by_id(&mut self, session_id: i32) -> QueryResult<Session> {
+        sessions::table.find(session_id).first(self.connection())
     }
 
     pub fn list_named_sessions(&mut self) -> QueryResult<Vec<Session>> {
@@ -75,6 +83,15 @@ impl ClaiDb {
             .execute(self.connection())?;
 
         Ok(())
+    }
+
+    pub fn update_session_role(&mut self, session_id: i32, role: Option<&str>) -> QueryResult<Session> {
+        let conn = self.connection();
+        diesel::update(sessions::table.find(session_id))
+            .set(sessions::role.eq(role))
+            .execute(conn)?;
+
+        sessions::table.find(session_id).first(conn)
     }
 
     // DELETE
