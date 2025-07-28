@@ -1,11 +1,15 @@
+#![feature(iter_map_windows)]
 use clap::Parser;
+use console::style;
 use session_manager::SessionManager;
 use std::env;
 use std::io::{self, Write};
 
 mod db;
+mod macros;
 mod server;
 mod session_manager;
+mod utils;
 
 #[derive(Parser)]
 #[command(name = "clai")]
@@ -34,14 +38,20 @@ async fn main() -> anyhow::Result<()> {
 
     let mut session_id = session_manager.get_or_create_session(cli.session.as_deref()).await?;
 
-    // Start interactive conversation loop
-    println!("💬 Chat started! Type 'exit', 'quit', or press Ctrl+C to end the conversation.");
-    println!("💾 Use '/save <name>' to save this session with a name.");
-    println!("🗑️ Use '/delete <name>' to delete a saved session.");
-    println!("📚 Use '/list' to show all saved sessions.");
-    println!("🔄 Use '/resume <name>' to switch to a different session.");
-    println!("🎭 Use '/role <role>' to set role, '/role' to view current role.");
-    println!("───────────────────────────────────────────────────────────────────");
+    utils::clear_screen()?;
+
+    write_line!(
+        "💬 Chat started! Type {}, {}, or press Ctrl+C to end the conversation.",
+        style("exit").red(),
+        style("quit").red(),
+    );
+    write_line!("Use /clear to clear the screen");
+    write_line!("💾 Use /save <name> to save this session with a name.");
+    write_line!("🗑️ Use /delete <name> to delete a saved session.");
+    write_line!("📚 Use /list to show all saved sessions.");
+    write_line!("🔄 Use /resume <name> to switch to a different session.");
+    write_line!("🎭 Use /role <role_name> to set role, /role to view current role.");
+    write_line!("───────────────────────────────────────────────────────────────────");
 
     loop {
         // Prompt for user input
@@ -58,7 +68,7 @@ async fn main() -> anyhow::Result<()> {
                     continue;
                 }
                 if message.eq_ignore_ascii_case("exit") || message.eq_ignore_ascii_case("quit") {
-                    println!("Goodbye! 👋");
+                    write_line!("Goodbye! 👋");
                     break;
                 }
 
@@ -69,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
                         session_manager.save_session(session_id, session_name).await?;
                         continue;
                     } else {
-                        println!("Usage: /save <session_name>");
+                        write_line!("Usage: /save <session_name>");
                         continue;
                     }
                 }
@@ -88,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
                             }
                         }
                     } else {
-                        println!("Usage: /delete <session_name>");
+                        write_line!("Usage: /delete <session_name>");
                         continue;
                     }
                 }
@@ -110,7 +120,7 @@ async fn main() -> anyhow::Result<()> {
                     if !session_name.is_empty() {
                         match session_manager.get_session_by_name(session_name).await {
                             Ok(new_session_id) => {
-                                println!("🔄 Switched to session: '{}'", session_name);
+                                write_line!("🔄 Switched to session: '{}'", session_name);
                                 session_id = new_session_id;
                                 continue;
                             }
@@ -120,7 +130,7 @@ async fn main() -> anyhow::Result<()> {
                             }
                         }
                     } else {
-                        println!("Usage: /resume <session_name>");
+                        write_line!("Usage: /resume <session_name>");
                         continue;
                     }
                 }
@@ -132,9 +142,9 @@ async fn main() -> anyhow::Result<()> {
                         match session_manager.get_session_info(session_id).await {
                             Ok(session) => {
                                 if let Some(role) = session.role {
-                                    println!("🎭 Current role: '{}'", role);
+                                    write_line!("🎭 Current role: '{}'", role);
                                 } else {
-                                    println!("🎭 No role set (Claude will respond as default assistant)");
+                                    write_line!("🎭 No role set (Claude will respond as default assistant)");
                                 }
                                 continue;
                             }
@@ -149,7 +159,7 @@ async fn main() -> anyhow::Result<()> {
                             // Set role
                             match session_manager.set_role(session_id, Some(role.to_string())).await {
                                 Ok(_) => {
-                                    println!("🎭 Role set to: '{}'", role);
+                                    write_line!("🎭 Role set to: '{}'", role);
                                     continue;
                                 }
                                 Err(e) => {
@@ -158,19 +168,25 @@ async fn main() -> anyhow::Result<()> {
                                 }
                             }
                         } else {
-                            println!("Usage: /role <role_name>");
+                            write_line!("Usage: /role <role_name>");
                             continue;
                         }
                     }
                 }
 
-                let bar = indicatif::ProgressBar::new_spinner().with_message("Claude is thinking...");
+                if message.trim() == "/clear" {
+                    // Clear the screen
+                    utils::clear_screen()?;
+                    continue;
+                }
+
+                let bar = indicatif::ProgressBar::new_spinner().with_message(style("Claude is thinking...").blue().to_string());
                 bar.enable_steady_tick(std::time::Duration::from_millis(100));
                 let response = session_manager.send_message(session_id, message).await?;
                 bar.finish_and_clear();
 
-                println!("Claude: {}", response);
-                println!("───────────────────────────────────────────────────────────────────");
+                write_line!("Claude: {}", response);
+                write_line!("───────────────────────────────────────────────────────────────────");
             }
             Err(e) => {
                 eprintln!("Error reading input: {}", e);
