@@ -1,6 +1,7 @@
 use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::cell::Cell;
 
 #[derive(Deserialize)]
 pub struct SessionResponse {
@@ -20,6 +21,7 @@ struct CreateSessionRequest {
 pub struct SessionManager {
     client: Client,
     server_url: String,
+    current_session: Cell<Option<i32>>,
 }
 
 impl SessionManager {
@@ -27,34 +29,47 @@ impl SessionManager {
         Self {
             client: Client::new(),
             server_url,
+            current_session: Cell::new(None),
         }
     }
 
-    pub async fn get_or_create_session(&self, session_name: Option<&str>) -> Result<(i32, String)> {
-        if let Some(name) = session_name {
+    pub fn set_current_session(&self, session_id: i32) {
+        self.current_session.set(Some(session_id));
+    }
+
+    pub fn require_current_session(&self) -> Result<i32> {
+        self.current_session.get().ok_or_else(|| anyhow::anyhow!("No current session set"))
+    }
+
+    pub async fn init(&self, session_name: Option<&str>) -> Result<(i32, String)> {
+        let (session_id, display_name) = if let Some(name) = session_name {
             // Try to get session by name
             let session_id = self.get_session_by_name(name).await?;
-            Ok((session_id, name.to_string()))
+            (session_id, name.to_string())
         } else {
             // Try to get the last session
             match self.get_last_session().await {
                 Ok(session_id) => {
                     // Get session info to determine the display name
-                    match self.get_session_info(session_id).await {
+                    match self.get_session_info_by_id(session_id).await {
                         Ok(session) => {
                             let display_name = session.display_name.unwrap_or_else(|| format!("Session {}", session_id));
-                            Ok((session_id, display_name))
+                            (session_id, display_name)
                         }
-                        Err(_) => Ok((session_id, format!("Session {}", session_id))),
+                        Err(_) => (session_id, format!("Session {}", session_id)),
                     }
                 }
                 Err(_) => {
                     // No last session found, create a new one
                     let session_id = self.create_new_session().await?;
-                    Ok((session_id, format!("Session {}", session_id)))
+                    (session_id, format!("Session {}", session_id))
                 }
             }
-        }
+        };
+
+        self.set_current_session(session_id);
+
+        Ok((session_id, display_name))
     }
 
     pub async fn get_session_by_name(&self, session_name: &str) -> Result<i32> {
@@ -110,13 +125,16 @@ impl SessionManager {
         if response.status().is_success() {
             let session: SessionResponse = response.json().await?;
             println!("Created new session: {} (ID: {})", session.name, session.id);
+            self.set_current_session(session.id);
             Ok(session.id)
         } else {
             anyhow::bail!("Failed to create session: {}", response.status());
         }
     }
 
-    pub async fn save_session(&self, session_id: i32, display_name: &str) -> Result<()> {
+    pub async fn save_session(&self, display_name: &str) -> Result<()> {
+        let session_id = self.require_current_session()?;
+
         #[derive(Serialize)]
         struct SaveSessionRequest {
             display_name: String,
@@ -164,7 +182,8 @@ impl SessionManager {
         Ok(())
     }
 
-    pub async fn set_role(&self, session_id: i32, role: Option<String>) -> Result<()> {
+    pub async fn set_role(&self, role: Option<String>) -> Result<()> {
+        let session_id = self.require_current_session()?;
         #[derive(Serialize)]
         struct SetRoleRequest {
             role: Option<String>,
@@ -188,7 +207,12 @@ impl SessionManager {
         Ok(())
     }
 
-    pub async fn get_session_info(&self, session_id: i32) -> Result<SessionResponse> {
+    pub async fn get_session_info(&self) -> Result<SessionResponse> {
+        let session_id = self.require_current_session()?;
+        self.get_session_info_by_id(session_id).await
+    }
+
+    pub async fn get_session_info_by_id(&self, session_id: i32) -> Result<SessionResponse> {
         let response = self
             .client
             .get(&format!("{}/sessions/{}", self.server_url, session_id))
@@ -232,7 +256,9 @@ impl SessionManager {
         Ok(())
     }
 
-    pub async fn send_message(&self, session_id: i32, message: &str) -> Result<String> {
+    pub async fn send_message(&self, message: &str) -> Result<String> {
+        let session_id = self.require_current_session()?;
+
         #[derive(Serialize)]
         struct ChatRequest {
             message: String,

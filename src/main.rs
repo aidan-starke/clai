@@ -1,6 +1,6 @@
 #![feature(iter_map_windows)]
 use clap::Parser;
-use commands::{CommandHandler, CommandResult};
+use commands::CommandHandler;
 use console::style;
 use session_manager::SessionManager;
 use std::env;
@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
     let session_manager = SessionManager::new(server_url);
     let command_handler = CommandHandler::new(session_manager.clone());
 
-    let (mut session_id, session_name) = session_manager.get_or_create_session(None).await?;
+    let (session_id, session_name) = session_manager.init(None).await?;
 
     utils::clear_screen()?;
 
@@ -72,30 +72,13 @@ async fn main() -> anyhow::Result<()> {
                     write_line!("");
                     write_line!("You entered: {}", style(message).yellow().bold());
 
-                    // Check if it's a valid command
-                    let is_valid_command = COMMANDS
-                        .iter()
-                        .any(|&cmd| message == cmd || message.starts_with(&format!("{} ", cmd)));
-
-                    if !is_valid_command {
-                        utils::write_command_help();
-                        continue;
-                    }
-
-                    // Handle the command
-                    match command_handler.handle_command(message, session_id).await? {
-                        CommandResult::Continue => continue,
-                        CommandResult::UpdateSession { id } => {
-                            session_id = id;
-                            continue;
-                        }
-                    }
+                    command_handler.handle_command(message).await?;
                 }
 
                 // Handle chat message
                 let bar = indicatif::ProgressBar::new_spinner().with_message(style("Claude is thinking...").blue().to_string());
                 bar.enable_steady_tick(std::time::Duration::from_millis(100));
-                let response = session_manager.send_message(session_id, message).await?;
+                let response = session_manager.send_message(message).await?;
                 bar.finish_and_clear();
 
                 write_spaced!("{}", style("Claude:").blue().bold());
@@ -120,4 +103,3 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-
