@@ -7,7 +7,7 @@ use axum::{
     response::Json as JsonResponse,
 };
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
 
 #[derive(Deserialize)]
 pub struct CreateSessionRequest {
@@ -63,7 +63,7 @@ pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusC
 
     // Update timestamp to mark as recently accessed
     if let Err(e) = db.update_session_timestamp(session.id) {
-        tracing::warn!("Failed to update session timestamp: {}", e);
+        warn!("Failed to update session timestamp: {}", e);
     }
 
     info!("Found last session: ID {}, name: {}", session.id, session.name);
@@ -88,7 +88,7 @@ pub async fn get_session_by_name(Path(name): Path<String>) -> Result<JsonRespons
 
     // Update timestamp to mark as recently accessed
     if let Err(e) = db.update_session_timestamp(session.id) {
-        tracing::warn!("Failed to update session timestamp: {}", e);
+        warn!("Failed to update session timestamp: {}", e);
     }
 
     let response = SessionResponse {

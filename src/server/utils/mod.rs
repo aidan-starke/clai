@@ -1,5 +1,5 @@
 use crate::db::ClaiDb;
-use tracing::info;
+use tracing::{error, info};
 
 pub fn cleanup_old_sessions() {
     tokio::spawn(async {
@@ -14,7 +14,7 @@ pub fn cleanup_old_sessions() {
                 }
             }
             Err(e) => {
-                tracing::error!("Failed to cleanup old sessions: {}", e);
+                error!("Failed to cleanup old sessions: {}", e);
             }
         }
     });
