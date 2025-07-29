@@ -186,7 +186,7 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
 }
 
 pub async fn ensure_server_running() -> anyhow::Result<()> {
-    let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
 
     // Quick health check
     if reqwest::get(&format!("{}/health", server_url)).await.is_ok() {

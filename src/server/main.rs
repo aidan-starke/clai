@@ -34,8 +34,8 @@ pub async fn run_server(debug_mode: bool) -> anyhow::Result<()> {
         .route("/sessions/{id}/role", put(handlers::session::set_role))
         .route("/sessions/{id}/chat", post(handlers::chat::chat));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    info!("Server running on http://0.0.0.0:3000");
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3500").await?;
+    info!("Server running on http://0.0.0.0:3500");
 
     axum::serve(listener, app).await?;
 

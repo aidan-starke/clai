@@ -32,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
         utils::ensure_server_running().await?;
     }
 
-    let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+    let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
 
     let session_manager = SessionManager::new(server_url);
     let command_handler = CommandHandler::new(session_manager.clone());
