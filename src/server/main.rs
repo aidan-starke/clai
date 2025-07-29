@@ -7,10 +7,12 @@ use tracing::info;
 use crate::server::handlers;
 use crate::server::utils;
 
-pub async fn run_server() -> anyhow::Result<()> {
+pub async fn run_server(debug_mode: bool) -> anyhow::Result<()> {
     dotenv::dotenv().ok();
 
-    tracing_subscriber::fmt().init();
+    if debug_mode {
+        tracing_subscriber::fmt().init();
+    }
 
     info!("clai server starting...");
 

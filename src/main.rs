@@ -24,7 +24,9 @@ async fn main() -> anyhow::Result<()> {
 
     // Handle server mode
     if cli.server {
-        return server::run_server().await;
+        return server::run_server(true).await;
+    } else {
+        utils::ensure_server_running().await?;
     }
 
     let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
@@ -36,9 +38,10 @@ async fn main() -> anyhow::Result<()> {
     utils::clear_screen()?;
 
     write_line!(
-        "💬 Chat started! Type {}, {}, or press Ctrl+C to end the conversation.",
+        "💬 Chat started! Type {}, {}, or press {} to end the conversation.",
         style("exit").red(),
         style("quit").red(),
+        style("Ctrl+C").red()
     );
     utils::write_command_help();
     write_line!("───────────────────────────────────────────────────────────────────");

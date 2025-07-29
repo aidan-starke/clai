@@ -1,7 +1,7 @@
 use console::{style, Key, Term};
-use std::sync::OnceLock;
+use std::{env, sync::OnceLock};
 
-use crate::write_line;
+use crate::{server, write_line};
 
 pub static TERM: OnceLock<Term> = OnceLock::new();
 
@@ -179,4 +179,26 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
             _ => {}
         }
     }
+}
+
+pub async fn ensure_server_running() -> anyhow::Result<()> {
+    let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
+
+    // Quick health check
+    if reqwest::get(&format!("{}/health", server_url)).await.is_ok() {
+        return Ok(()); // Server already running
+    }
+
+    // Start server
+    tokio::spawn(server::run_server(false));
+
+    // Wait for server to be ready, 5 second timeout
+    for _ in 0..50 {
+        if reqwest::get(&format!("{}/health", server_url)).await.is_ok() {
+            return Ok(());
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+
+    Err(anyhow::anyhow!("Server failed to start"))
 }
