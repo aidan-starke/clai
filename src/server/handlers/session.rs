@@ -1,37 +1,14 @@
 use crate::db::ClaiDb;
 use crate::handle_db_operation;
 use crate::server::utils;
+use crate::types::*;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
     response::Json as JsonResponse,
 };
-use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-#[derive(Deserialize)]
-pub struct CreateSessionRequest {
-    pub name: String,
-    pub display_name: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct SessionResponse {
-    pub id: i32,
-    pub name: String,
-    pub display_name: Option<String>,
-    pub role: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub struct SaveSessionRequest {
-    pub display_name: String,
-}
-
-#[derive(Deserialize)]
-pub struct SetRoleRequest {
-    pub role: Option<String>,
-}
 
 // CREATE operations
 pub async fn create_session(Json(payload): Json<CreateSessionRequest>) -> Result<JsonResponse<SessionResponse>, StatusCode> {

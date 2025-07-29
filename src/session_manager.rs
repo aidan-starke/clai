@@ -1,21 +1,7 @@
 use anyhow::Result;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
 use std::cell::Cell;
-
-#[derive(Deserialize)]
-pub struct SessionResponse {
-    id: i32,
-    name: String,
-    display_name: Option<String>,
-    pub role: Option<String>,
-}
-
-#[derive(Serialize)]
-struct CreateSessionRequest {
-    name: String,
-    display_name: Option<String>,
-}
+use crate::types::*;
 
 #[derive(Clone)]
 pub struct SessionManager {
@@ -135,11 +121,6 @@ impl SessionManager {
     pub async fn save_session(&self, display_name: &str) -> Result<()> {
         let session_id = self.require_current_session()?;
 
-        #[derive(Serialize)]
-        struct SaveSessionRequest {
-            display_name: String,
-        }
-
         let request = SaveSessionRequest {
             display_name: display_name.to_string(),
         };
@@ -184,10 +165,6 @@ impl SessionManager {
 
     pub async fn set_role(&self, role: Option<String>) -> Result<()> {
         let session_id = self.require_current_session()?;
-        #[derive(Serialize)]
-        struct SetRoleRequest {
-            role: Option<String>,
-        }
 
         let request = SetRoleRequest { role };
 
@@ -258,16 +235,6 @@ impl SessionManager {
 
     pub async fn send_message(&self, message: &str) -> Result<String> {
         let session_id = self.require_current_session()?;
-
-        #[derive(Serialize)]
-        struct ChatRequest {
-            message: String,
-        }
-
-        #[derive(Deserialize)]
-        struct ChatResponse {
-            response: String,
-        }
 
         let request = ChatRequest {
             message: message.to_string(),

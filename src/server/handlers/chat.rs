@@ -1,5 +1,6 @@
 use crate::db::ClaiDb;
 use crate::handle_db_operation;
+use crate::types::*;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
@@ -8,16 +9,6 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::env;
 use tracing::{error, info};
-
-#[derive(Deserialize)]
-pub struct ChatRequest {
-    pub message: String,
-}
-
-#[derive(Serialize)]
-pub struct ChatResponse {
-    pub response: String,
-}
 
 #[derive(Serialize)]
 struct ClaudeRequest {

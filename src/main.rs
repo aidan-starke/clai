@@ -4,13 +4,13 @@ use commands::CommandHandler;
 use console::style;
 use session_manager::SessionManager;
 use std::env;
-use utils::COMMANDS;
 
 mod commands;
 mod db;
 mod macros;
 mod server;
 mod session_manager;
+mod types;
 mod utils;
 
 #[derive(Parser)]
