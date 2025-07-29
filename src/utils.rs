@@ -80,7 +80,10 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
 
         // Show current input
         term.clear_line()?;
-        term.write_str(&format!("You: {}", input))?;
+        if input.is_empty() {
+            write_line!("");
+        }
+        term.write_str(&format!("{}: {}", style("You").green(), input))?;
 
         // Show dropdown if user typed '/'
         if show_dropdown {

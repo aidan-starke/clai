@@ -69,10 +69,10 @@ async fn main() -> anyhow::Result<()> {
 
                 // Handle slash commands
                 if message.starts_with('/') {
-                    write_line!("");
-                    write_line!("You entered: {}", style(message).yellow().bold());
+                    write_spaced!("You entered: {}", style(message).yellow().bold());
 
                     command_handler.handle_command(message).await?;
+                    continue;
                 }
 
                 // Handle chat message
@@ -81,7 +81,7 @@ async fn main() -> anyhow::Result<()> {
                 let response = session_manager.send_message(message).await?;
                 bar.finish_and_clear();
 
-                write_spaced!("{}", style("Claude:").blue().bold());
+                write_spaced!("{}:", style("Claude").blue().bold());
 
                 // Format the response with proper line breaks
                 for line in response.lines() {
