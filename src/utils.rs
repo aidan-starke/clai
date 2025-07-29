@@ -5,8 +5,12 @@ use crate::{server, write_line};
 
 pub static TERM: OnceLock<Term> = OnceLock::new();
 
+pub fn get_term() -> &'static Term {
+    TERM.get_or_init(|| Term::stdout())
+}
+
 pub fn clear_screen() -> anyhow::Result<()> {
-    TERM.get_or_init(|| Term::stdout()).clear_screen()?;
+    get_term().clear_screen()?;
     Ok(())
 }
 
@@ -53,7 +57,7 @@ pub fn write_command_help() {
 }
 
 pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
-    let term = TERM.get_or_init(|| Term::stdout());
+    let term = get_term();
     let mut input = String::new();
     let mut show_dropdown = false;
     let mut selected_index = 0;

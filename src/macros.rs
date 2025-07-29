@@ -15,7 +15,7 @@ macro_rules! write_line {
     ($($arg:tt)*) => {
         {
             let text = format!($($arg)*);
-            $crate::utils::TERM.get_or_init(|| console::Term::stdout())
+            $crate::utils::get_term()
                 .write_line(&text)
                 .unwrap();
         }
