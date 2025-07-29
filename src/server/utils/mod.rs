@@ -4,7 +4,7 @@ use tracing::info;
 pub fn cleanup_old_sessions() {
     tokio::spawn(async {
         info!("Starting background database cleanup...");
-        let mut db = ClaiDb::new();
+        let mut db = ClaiDb::get();
         match db.cleanup_old_sessions() {
             Ok(deleted_count) => {
                 if deleted_count > 0 {

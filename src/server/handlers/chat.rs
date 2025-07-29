@@ -53,36 +53,37 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
     })?;
 
     let client = reqwest::Client::new();
-    let mut db = ClaiDb::new();
 
-    // Get session info to check for role
-    let session = handle_db_operation!("get session info", db.get_session_by_id(session_id));
+    let (session, messages) = {
+        let mut db = ClaiDb::get();
 
-    // Get conversation history (before storing the new message)
-    let mut messages = match db.get_session_messages(session_id) {
-        Ok(msgs) => {
-            // Convert database messages to Claude API format
-            let mut claude_messages = Vec::new();
-            for msg in msgs {
-                claude_messages.push(ClaudeMessage {
-                    role: msg.role,
-                    content: msg.content,
-                });
+        let session = handle_db_operation!("get session info", db.get_session_by_id(session_id));
+
+        let messages = match db.get_session_messages(session_id) {
+            Ok(msgs) => {
+                let mut claude_messages = Vec::new();
+                for msg in msgs {
+                    claude_messages.push(ClaudeMessage {
+                        role: msg.role,
+                        content: msg.content,
+                    });
+                }
+                claude_messages
             }
-            claude_messages
-        }
-        Err(e) => {
-            error!("Failed to get session messages: {}", e);
-            // Fallback to empty conversation history
-            Vec::new()
-        }
-    };
+            Err(e) => {
+                error!("Failed to get session messages: {}", e);
+                Vec::new()
+            }
+        };
 
-    // Add the new user message
-    messages.push(ClaudeMessage {
-        role: "user".to_string(),
-        content: payload.message.clone(),
-    });
+        let mut messages = messages;
+        messages.push(ClaudeMessage {
+            role: "user".to_string(),
+            content: payload.message.clone(),
+        });
+
+        (session, messages)
+    };
 
     // Prepare system message if role is set
     let system_message = session.role.as_ref().map(|role| {
@@ -122,9 +123,10 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    handle_db_operation!("store user message", db.create_message(session_id, "user", &payload.message));
-
     let text = claude_response.content.into_iter().map(|c| c.text).collect::<Vec<_>>().join("");
+
+    let mut db = ClaiDb::get();
+    handle_db_operation!("store user message", db.create_message(session_id, "user", &payload.message));
     handle_db_operation!("store assistant message", db.create_message(session_id, "assistant", &text));
 
     info!("Successfully processed chat request for session {}", session_id);

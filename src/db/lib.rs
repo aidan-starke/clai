@@ -1,11 +1,11 @@
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use std::sync::Once;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use crate::db::models::{Message, NewMessage, NewSession, Session};
 use crate::db::schema::{messages, sessions};
 
-static INIT: Once = Once::new();
+static DATABASE: OnceLock<Mutex<ClaiDb>> = OnceLock::new();
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
@@ -14,20 +14,21 @@ pub struct ClaiDb {
 }
 
 impl ClaiDb {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "clai.db".to_string());
-
-        // Run migrations only once
         let mut connection = SqliteConnection::establish(&database_url).unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
-        INIT.call_once(|| {
-            connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
-        });
+        // Run migrations
+        connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
 
         ClaiDb { connection }
     }
 
-    pub fn connection(&mut self) -> &mut SqliteConnection {
+    pub fn get() -> MutexGuard<'static, ClaiDb> {
+        DATABASE.get_or_init(|| Mutex::new(ClaiDb::new())).lock().unwrap()
+    }
+
+    fn connection(&mut self) -> &mut SqliteConnection {
         &mut self.connection
     }
 
