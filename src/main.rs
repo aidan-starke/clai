@@ -3,6 +3,7 @@ use clap::Parser;
 use console::style;
 use session_manager::SessionManager;
 use std::env;
+use utils::COMMANDS;
 
 mod db;
 mod macros;
@@ -64,8 +65,7 @@ async fn main() -> anyhow::Result<()> {
                     write_line!("You entered: {}", style(message).yellow().bold());
 
                     // Show help for invalid or partial commands
-                    let valid_commands = ["/clear", "/new", "/save", "/delete", "/list", "/resume", "/role"];
-                    let is_valid_command = valid_commands
+                    let is_valid_command = COMMANDS
                         .iter()
                         .any(|&cmd| message == cmd || message.starts_with(&format!("{} ", cmd)));
 
@@ -102,10 +102,10 @@ async fn main() -> anyhow::Result<()> {
                                 continue;
                             }
                         }
-                    } else if message.starts_with("/new ") {
+                    } else {
                         let session_name = message.trim_start_matches("/new ").trim();
                         if !session_name.is_empty() {
-                            // Create new session and immediately save it with the given name
+                            // Create new session and save it with the given name
                             match session_manager.create_new_session().await {
                                 Ok(new_session_id) => match session_manager.save_session(new_session_id, session_name).await {
                                     Ok(_) => {
@@ -241,9 +241,7 @@ async fn main() -> anyhow::Result<()> {
                 let response = session_manager.send_message(session_id, message).await?;
                 bar.finish_and_clear();
 
-                write_line!("");
-                write_line!("{}", style("Claude:").blue().bold());
-                write_line!("");
+                write_spaced!("{}", style("Claude:").blue().bold());
 
                 // Format the response with proper line breaks
                 for line in response.lines() {
@@ -254,9 +252,7 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
 
-                write_line!("");
-                write_line!("───────────────────────────────────────────────────────────────────");
-                write_line!("");
+                write_spaced!("───────────────────────────────────────────────────────────────────");
             }
             Err(e) => {
                 utils::write_error(&format!("Error reading input: {}", e));

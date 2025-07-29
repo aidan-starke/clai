@@ -3,6 +3,8 @@ use std::{env, sync::OnceLock};
 
 use crate::{server, write_line};
 
+pub const COMMANDS: [&str; 7] = ["/clear", "/new", "/save", "/delete", "/list", "/resume", "/role"];
+
 pub static TERM: OnceLock<Term> = OnceLock::new();
 
 pub fn get_term() -> &'static Term {
