@@ -28,7 +28,7 @@ pub fn write_error(text: &str) {
     write_line!("");
 }
 
-pub fn write_session_info(session_name: &str, session_id: i32) {
+pub fn write_session_info(session_id: i32, session_name: &str) {
     write_line!("");
     write_line!(
         "📍 Current session: {} (ID: {})",

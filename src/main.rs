@@ -1,10 +1,12 @@
 #![feature(iter_map_windows)]
 use clap::Parser;
+use commands::{CommandHandler, CommandResult};
 use console::style;
 use session_manager::SessionManager;
 use std::env;
 use utils::COMMANDS;
 
+mod commands;
 mod db;
 mod macros;
 mod server;
@@ -33,8 +35,9 @@ async fn main() -> anyhow::Result<()> {
     let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3000".to_string());
 
     let session_manager = SessionManager::new(server_url);
+    let command_handler = CommandHandler::new(session_manager.clone());
 
-    let (mut session_id, mut current_session_name) = session_manager.get_or_create_session(None).await?;
+    let (mut session_id, session_name) = session_manager.get_or_create_session(None).await?;
 
     utils::clear_screen()?;
 
@@ -47,24 +50,29 @@ async fn main() -> anyhow::Result<()> {
     utils::write_command_help();
     write_line!("───────────────────────────────────────────────────────────────────");
 
-    utils::write_session_info(&current_session_name, session_id);
+    utils::write_session_info(session_id, &session_name);
 
     loop {
         match utils::read_input_with_autocomplete() {
             Ok(input) => {
                 let message = input.trim();
 
-                // Check for exit commands
                 if message.is_empty() {
                     continue;
                 }
 
-                // If user types a command, highlight it and show help
+                // Handle exit commands
+                if message.eq_ignore_ascii_case("exit") || message.eq_ignore_ascii_case("quit") {
+                    write_spaced!("Goodbye! 👋");
+                    break;
+                }
+
+                // Handle slash commands
                 if message.starts_with('/') {
                     write_line!("");
                     write_line!("You entered: {}", style(message).yellow().bold());
 
-                    // Show help for invalid or partial commands
+                    // Check if it's a valid command
                     let is_valid_command = COMMANDS
                         .iter()
                         .any(|&cmd| message == cmd || message.starts_with(&format!("{} ", cmd)));
@@ -73,169 +81,18 @@ async fn main() -> anyhow::Result<()> {
                         utils::write_command_help();
                         continue;
                     }
-                }
-                if message.eq_ignore_ascii_case("exit") || message.eq_ignore_ascii_case("quit") {
-                    write_spaced!("Goodbye! 👋");
-                    break;
-                }
 
-                // Check for clear command
-                if message.trim() == "/clear" {
-                    utils::clear_screen()?;
-                    continue;
-                }
-
-                // Check for new command
-                if message.starts_with("/new") {
-                    if message == "/new" {
-                        // Create new session with auto-generated name
-                        match session_manager.create_new_session().await {
-                            Ok(new_session_id) => {
-                                session_id = new_session_id;
-                                current_session_name = format!("Session {}", new_session_id);
-                                write_spaced!("✨ Created new session (ID: {})", new_session_id);
-                                utils::write_session_info(&current_session_name, session_id);
-                                continue;
-                            }
-                            Err(e) => {
-                                utils::write_error(&format!("Failed to create new session: {}", e));
-                                continue;
-                            }
-                        }
-                    } else {
-                        let session_name = message.trim_start_matches("/new ").trim();
-                        if !session_name.is_empty() {
-                            // Create new session and save it with the given name
-                            match session_manager.create_new_session().await {
-                                Ok(new_session_id) => match session_manager.save_session(new_session_id, session_name).await {
-                                    Ok(_) => {
-                                        session_id = new_session_id;
-                                        current_session_name = session_name.to_string();
-                                        write_spaced!("✨ Created and saved new session: '{}'", session_name);
-                                        utils::write_session_info(&current_session_name, session_id);
-                                        continue;
-                                    }
-                                    Err(e) => {
-                                        utils::write_error(&format!("Failed to save new session: {}", e));
-                                        continue;
-                                    }
-                                },
-                                Err(e) => {
-                                    utils::write_error(&format!("Failed to create new session: {}", e));
-                                    continue;
-                                }
-                            }
-                        } else {
-                            write_line!("Usage: /new <session_name>");
+                    // Handle the command
+                    match command_handler.handle_command(message, session_id).await? {
+                        CommandResult::Continue => continue,
+                        CommandResult::UpdateSession { id } => {
+                            session_id = id;
                             continue;
                         }
                     }
                 }
 
-                // Check for save command
-                if message.starts_with("/save ") {
-                    let session_name = message.trim_start_matches("/save ").trim();
-                    if !session_name.is_empty() {
-                        session_manager.save_session(session_id, session_name).await?;
-                        continue;
-                    } else {
-                        write_line!("Usage: /save <session_name>");
-                        continue;
-                    }
-                }
-
-                // Check for delete command
-                if message.starts_with("/delete ") {
-                    let session_name = message.trim_start_matches("/delete ").trim();
-                    if !session_name.is_empty() {
-                        match session_manager.delete_session(session_name).await {
-                            Ok(_) => {
-                                continue;
-                            }
-                            Err(e) => {
-                                utils::write_error(&format!("Failed to delete session: {}", e));
-                                continue;
-                            }
-                        }
-                    } else {
-                        write_line!("Usage: /delete <session_name>");
-                        continue;
-                    }
-                }
-
-                // Check for list command
-                if message.trim() == "/list" {
-                    match session_manager.list_sessions().await {
-                        Ok(_) => continue,
-                        Err(e) => {
-                            utils::write_error(&format!("Failed to list sessions: {}", e));
-                            continue;
-                        }
-                    }
-                }
-
-                // Check for resume command
-                if message.starts_with("/resume ") {
-                    let session_name = message.trim_start_matches("/resume ").trim();
-                    if !session_name.is_empty() {
-                        match session_manager.get_session_by_name(session_name).await {
-                            Ok(new_session_id) => {
-                                write_spaced!("🔄 Switched to session: '{}'", session_name);
-                                session_id = new_session_id;
-                                current_session_name = session_name.to_string();
-                                utils::write_session_info(&current_session_name, session_id);
-                                continue;
-                            }
-                            Err(e) => {
-                                utils::write_error(&format!("Failed to resume session: {}", e));
-                                continue;
-                            }
-                        }
-                    } else {
-                        write_line!("Usage: /resume <session_name>");
-                        continue;
-                    }
-                }
-
-                // Check for role command
-                if message.starts_with("/role") {
-                    if message == "/role" {
-                        // Show current role if just "/role" with no arguments
-                        match session_manager.get_session_info(session_id).await {
-                            Ok(session) => {
-                                if let Some(role) = session.role {
-                                    write_line!("🎭 Current role: '{}'", role);
-                                } else {
-                                    write_line!("🎭 No role set (Claude will respond as default assistant)");
-                                }
-                                continue;
-                            }
-                            Err(e) => {
-                                utils::write_error(&format!("Failed to get session info: {}", e));
-                                continue;
-                            }
-                        }
-                    } else if message.starts_with("/role ") {
-                        let role = message.trim_start_matches("/role ").trim();
-                        if !role.is_empty() {
-                            // Set role
-                            match session_manager.set_role(session_id, Some(role.to_string())).await {
-                                Ok(_) => {
-                                    write_spaced!("🎭 Role set to: '{}'", role);
-                                    continue;
-                                }
-                                Err(e) => {
-                                    utils::write_error(&format!("Failed to set role: {}", e));
-                                    continue;
-                                }
-                            }
-                        } else {
-                            write_line!("Usage: /role <role_name>");
-                            continue;
-                        }
-                    }
-                }
-
+                // Handle chat message
                 let bar = indicatif::ProgressBar::new_spinner().with_message(style("Claude is thinking...").blue().to_string());
                 bar.enable_steady_tick(std::time::Duration::from_millis(100));
                 let response = session_manager.send_message(session_id, message).await?;
@@ -263,3 +120,4 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+

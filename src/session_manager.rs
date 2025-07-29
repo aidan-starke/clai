@@ -16,6 +16,7 @@ struct CreateSessionRequest {
     display_name: Option<String>,
 }
 
+#[derive(Clone)]
 pub struct SessionManager {
     client: Client,
     server_url: String,
