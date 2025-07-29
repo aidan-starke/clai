@@ -81,6 +81,59 @@ async fn main() -> anyhow::Result<()> {
                     break;
                 }
 
+                // Check for clear command
+                if message.trim() == "/clear" {
+                    utils::clear_screen()?;
+                    continue;
+                }
+
+                // Check for new command
+                if message.starts_with("/new") {
+                    if message == "/new" {
+                        // Create new session with auto-generated name
+                        match session_manager.create_new_session().await {
+                            Ok(new_session_id) => {
+                                session_id = new_session_id;
+                                current_session_name = format!("Session {}", new_session_id);
+                                write_spaced!("✨ Created new session (ID: {})", new_session_id);
+                                utils::write_session_info(&current_session_name, session_id);
+                                continue;
+                            }
+                            Err(e) => {
+                                utils::write_error(&format!("Failed to create new session: {}", e));
+                                continue;
+                            }
+                        }
+                    } else if message.starts_with("/new ") {
+                        let session_name = message.trim_start_matches("/new ").trim();
+                        if !session_name.is_empty() {
+                            // Create new session and immediately save it with the given name
+                            match session_manager.create_new_session().await {
+                                Ok(new_session_id) => match session_manager.save_session(new_session_id, session_name).await {
+                                    Ok(_) => {
+                                        session_id = new_session_id;
+                                        current_session_name = session_name.to_string();
+                                        write_spaced!("✨ Created and saved new session: '{}'", session_name);
+                                        utils::write_session_info(&current_session_name, session_id);
+                                        continue;
+                                    }
+                                    Err(e) => {
+                                        utils::write_error(&format!("Failed to save new session: {}", e));
+                                        continue;
+                                    }
+                                },
+                                Err(e) => {
+                                    utils::write_error(&format!("Failed to create new session: {}", e));
+                                    continue;
+                                }
+                            }
+                        } else {
+                            write_line!("Usage: /new <session_name>");
+                            continue;
+                        }
+                    }
+                }
+
                 // Check for save command
                 if message.starts_with("/save ") {
                     let session_name = message.trim_start_matches("/save ").trim();
@@ -180,59 +233,6 @@ async fn main() -> anyhow::Result<()> {
                             }
                         } else {
                             write_line!("Usage: /role <role_name>");
-                            continue;
-                        }
-                    }
-                }
-
-                if message.trim() == "/clear" {
-                    // Clear the screen
-                    utils::clear_screen()?;
-                    continue;
-                }
-
-                // Check for new command
-                if message.starts_with("/new") {
-                    if message == "/new" {
-                        // Create new session with auto-generated name
-                        match session_manager.create_new_session().await {
-                            Ok(new_session_id) => {
-                                session_id = new_session_id;
-                                current_session_name = format!("Session {}", new_session_id);
-                                write_spaced!("✨ Created new session (ID: {})", new_session_id);
-                                utils::write_session_info(&current_session_name, session_id);
-                                continue;
-                            }
-                            Err(e) => {
-                                utils::write_error(&format!("Failed to create new session: {}", e));
-                                continue;
-                            }
-                        }
-                    } else if message.starts_with("/new ") {
-                        let session_name = message.trim_start_matches("/new ").trim();
-                        if !session_name.is_empty() {
-                            // Create new session and immediately save it with the given name
-                            match session_manager.create_new_session().await {
-                                Ok(new_session_id) => match session_manager.save_session(new_session_id, session_name).await {
-                                    Ok(_) => {
-                                        session_id = new_session_id;
-                                        current_session_name = session_name.to_string();
-                                        write_spaced!("✨ Created and saved new session: '{}'", session_name);
-                                        utils::write_session_info(&current_session_name, session_id);
-                                        continue;
-                                    }
-                                    Err(e) => {
-                                        utils::write_error(&format!("Failed to save new session: {}", e));
-                                        continue;
-                                    }
-                                },
-                                Err(e) => {
-                                    utils::write_error(&format!("Failed to create new session: {}", e));
-                                    continue;
-                                }
-                            }
-                        } else {
-                            write_line!("Usage: /new <session_name>");
                             continue;
                         }
                     }

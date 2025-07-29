@@ -132,7 +132,7 @@ pub async fn get_session_by_id(Path(session_id): Path<i32>) -> Result<JsonRespon
     let mut db = ClaiDb::new();
 
     let session = handle_db_operation!("get session by id", db.get_session_by_id(session_id));
-    
+
     info!("Found session: ID {}, name: {}", session_id, session.name);
 
     let response = SessionResponse {
@@ -141,7 +141,7 @@ pub async fn get_session_by_id(Path(session_id): Path<i32>) -> Result<JsonRespon
         display_name: session.display_name,
         role: session.role,
     };
-    
+
     Ok(JsonResponse(response))
 }
 
@@ -177,16 +177,16 @@ pub async fn set_role(
     let mut db = ClaiDb::new();
 
     let session = handle_db_operation!("set session role", db.update_session_role(session_id, payload.role.as_deref()));
-    
+
     info!("Updated session {} role to: {:?}", session_id, payload.role);
-    
+
     let response = SessionResponse {
         id: session.id,
         name: session.name,
         display_name: session.display_name,
         role: session.role,
     };
-    
+
     Ok(JsonResponse(response))
 }
 

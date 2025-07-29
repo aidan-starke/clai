@@ -25,7 +25,10 @@ pub async fn run_server() -> anyhow::Result<()> {
             "/sessions/by-name/{name}",
             get(handlers::session::get_session_by_name).delete(handlers::session::delete_session),
         )
-        .route("/sessions/{id}", get(handlers::session::get_session_by_id).patch(handlers::session::save_session))
+        .route(
+            "/sessions/{id}",
+            get(handlers::session::get_session_by_id).patch(handlers::session::save_session),
+        )
         .route("/sessions/{id}/role", put(handlers::session::set_role))
         .route("/sessions/{id}/chat", post(handlers::chat::chat));
 

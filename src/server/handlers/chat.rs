@@ -86,7 +86,10 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
 
     // Prepare system message if role is set
     let system_message = session.role.as_ref().map(|role| {
-        format!("You are a {}. Please respond in character and provide expertise relevant to this role.", role)
+        format!(
+            "You are a {}. Please respond in character and provide expertise relevant to this role.",
+            role
+        )
     });
 
     let claude_request = ClaudeRequest {

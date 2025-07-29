@@ -44,7 +44,7 @@ impl SessionManager {
                             let display_name = session.display_name.unwrap_or_else(|| format!("Session {}", session_id));
                             Ok((session_id, display_name))
                         }
-                        Err(_) => Ok((session_id, format!("Session {}", session_id)))
+                        Err(_) => Ok((session_id, format!("Session {}", session_id))),
                     }
                 }
                 Err(_) => {
