@@ -1,7 +1,7 @@
+use crate::types::*;
 use anyhow::Result;
 use reqwest::Client;
 use std::cell::Cell;
-use crate::types::*;
 
 #[derive(Clone)]
 pub struct SessionManager {

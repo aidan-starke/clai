@@ -35,5 +35,3 @@ pub struct ChatRequest {
 pub struct ChatResponse {
     pub response: String,
 }
-
-

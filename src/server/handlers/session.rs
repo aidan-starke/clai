@@ -9,7 +9,6 @@ use axum::{
 };
 use tracing::{info, warn};
 
-
 // CREATE operations
 pub async fn create_session(Json(payload): Json<CreateSessionRequest>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Creating new session with name: {}", payload.name);
