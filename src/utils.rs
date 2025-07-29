@@ -1,6 +1,8 @@
 use console::{style, Term};
 use std::sync::OnceLock;
 
+use crate::write_line;
+
 pub static TERM: OnceLock<Term> = OnceLock::new();
 
 pub fn clear_screen() -> anyhow::Result<()> {
@@ -8,14 +10,10 @@ pub fn clear_screen() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn write_blank_line() {
-    TERM.get_or_init(|| Term::stdout()).write_line("").unwrap();
-}
-
 pub fn write_spaced_line(text: &str) {
-    write_blank_line();
-    TERM.get_or_init(|| Term::stdout()).write_line(text).unwrap();
-    write_blank_line();
+    write_line!("");
+    write_line!("{}", text);
+    write_line!("");
 }
 
 pub fn write_prompt(text: &str) {
@@ -23,20 +21,39 @@ pub fn write_prompt(text: &str) {
 }
 
 pub fn write_error(text: &str) {
-    let styled_text = format!("❌ {}", style(text).red());
-    write_blank_line();
-    TERM.get_or_init(|| Term::stdout()).write_line(&styled_text).unwrap();
-    write_blank_line();
+    write_line!("");
+    write_line!("❌ {}", style(text).red());
+    write_line!("");
 }
 
 pub fn write_session_info(session_name: &str, session_id: i32) {
-    write_blank_line();
-    let styled_text = format!("📍 Current session: {} (ID: {})", 
-        style(session_name).cyan().bold(), 
+    write_line!("");
+    write_line!(
+        "📍 Current session: {} (ID: {})",
+        style(session_name).cyan().bold(),
         style(session_id.to_string()).dim()
     );
-    TERM.get_or_init(|| Term::stdout()).write_line(&styled_text).unwrap();
-    write_blank_line();
+    write_line!("");
+}
+
+pub fn write_command_help() {
+    write_line!("");
+    write_line!("{}", style("💡 Available commands:").yellow().bold());
+
+    let commands = [
+        ("🧹 /clear", "Clear the screen"),
+        ("✨ /new [name]", "Create a new session"),
+        ("💾 /save <name>", "Save current session with a name"),
+        ("🗑️ /delete <name>", "Delete a saved session"),
+        ("📚 /list", "Show all saved sessions"),
+        ("🔄 /resume <name>", "Switch to a different session"),
+        ("🎭 /role [role]", "Set or view current role"),
+    ];
+
+    for (command, description) in &commands {
+        write_line!("  {} - {}", style(command).yellow(), style(description).dim());
+    }
+    write_line!("");
 }
 
 pub fn auto_style_commands(text: &str) -> String {
@@ -83,4 +100,3 @@ pub fn auto_style_commands(text: &str) -> String {
 
     res.join(" ")
 }
-

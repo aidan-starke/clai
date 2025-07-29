@@ -41,15 +41,9 @@ async fn main() -> anyhow::Result<()> {
         style("exit").red(),
         style("quit").red(),
     );
-    write_line!("🧹 Use /clear to clear the screen");
-    write_line!("✨ Use /new or /new <name> to create a new session.");
-    write_line!("💾 Use /save <name> to save this session with a name.");
-    write_line!("🗑️ Use /delete <name> to delete a saved session.");
-    write_line!("📚 Use /list to show all saved sessions.");
-    write_line!("🔄 Use /resume <name> to switch to a different session.");
-    write_line!("🎭 Use /role <role_name> to set role, /role to view current role.");
+    utils::write_command_help();
     write_line!("───────────────────────────────────────────────────────────────────");
-    
+
     utils::write_session_info(&current_session_name, session_id);
 
     loop {
@@ -64,6 +58,23 @@ async fn main() -> anyhow::Result<()> {
                 // Check for exit commands
                 if message.is_empty() {
                     continue;
+                }
+
+                // If user types a command, highlight it and show help
+                if message.starts_with('/') {
+                    write_line!("");
+                    write_line!("You entered: {}", style(message).yellow().bold());
+
+                    // Show help for invalid or partial commands
+                    let valid_commands = ["/clear", "/new", "/save", "/delete", "/list", "/resume", "/role"];
+                    let is_valid_command = valid_commands
+                        .iter()
+                        .any(|&cmd| message == cmd || message.starts_with(&format!("{} ", cmd)));
+
+                    if !is_valid_command {
+                        utils::write_command_help();
+                        continue;
+                    }
                 }
                 if message.eq_ignore_ascii_case("exit") || message.eq_ignore_ascii_case("quit") {
                     write_spaced!("Goodbye! 👋");
@@ -202,21 +213,19 @@ async fn main() -> anyhow::Result<()> {
                         if !session_name.is_empty() {
                             // Create new session and immediately save it with the given name
                             match session_manager.create_new_session().await {
-                                Ok(new_session_id) => {
-                                    match session_manager.save_session(new_session_id, session_name).await {
-                                        Ok(_) => {
-                                            session_id = new_session_id;
-                                            current_session_name = session_name.to_string();
-                                            write_spaced!("✨ Created and saved new session: '{}'", session_name);
-                                            utils::write_session_info(&current_session_name, session_id);
-                                            continue;
-                                        }
-                                        Err(e) => {
-                                            utils::write_error(&format!("Failed to save new session: {}", e));
-                                            continue;
-                                        }
+                                Ok(new_session_id) => match session_manager.save_session(new_session_id, session_name).await {
+                                    Ok(_) => {
+                                        session_id = new_session_id;
+                                        current_session_name = session_name.to_string();
+                                        write_spaced!("✨ Created and saved new session: '{}'", session_name);
+                                        utils::write_session_info(&current_session_name, session_id);
+                                        continue;
                                     }
-                                }
+                                    Err(e) => {
+                                        utils::write_error(&format!("Failed to save new session: {}", e));
+                                        continue;
+                                    }
+                                },
                                 Err(e) => {
                                     utils::write_error(&format!("Failed to create new session: {}", e));
                                     continue;
@@ -234,22 +243,22 @@ async fn main() -> anyhow::Result<()> {
                 let response = session_manager.send_message(session_id, message).await?;
                 bar.finish_and_clear();
 
-                utils::write_blank_line();
+                write_line!("");
                 write_line!("{}", style("Claude:").blue().bold());
-                utils::write_blank_line();
-                
+                write_line!("");
+
                 // Format the response with proper line breaks
                 for line in response.lines() {
                     if line.trim().is_empty() {
-                        utils::write_blank_line();
+                        write_line!("");
                     } else {
                         write_line!("{}", line);
                     }
                 }
-                
-                utils::write_blank_line();
+
+                write_line!("");
                 write_line!("───────────────────────────────────────────────────────────────────");
-                utils::write_blank_line();
+                write_line!("");
             }
             Err(e) => {
                 utils::write_error(&format!("Error reading input: {}", e));
