@@ -8,6 +8,37 @@ pub fn clear_screen() -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn write_blank_line() {
+    TERM.get_or_init(|| Term::stdout()).write_line("").unwrap();
+}
+
+pub fn write_spaced_line(text: &str) {
+    write_blank_line();
+    TERM.get_or_init(|| Term::stdout()).write_line(text).unwrap();
+    write_blank_line();
+}
+
+pub fn write_prompt(text: &str) {
+    TERM.get_or_init(|| Term::stdout()).write_str(text).unwrap();
+}
+
+pub fn write_error(text: &str) {
+    let styled_text = format!("❌ {}", style(text).red());
+    write_blank_line();
+    TERM.get_or_init(|| Term::stdout()).write_line(&styled_text).unwrap();
+    write_blank_line();
+}
+
+pub fn write_session_info(session_name: &str, session_id: i32) {
+    write_blank_line();
+    let styled_text = format!("📍 Current session: {} (ID: {})", 
+        style(session_name).cyan().bold(), 
+        style(session_id.to_string()).dim()
+    );
+    TERM.get_or_init(|| Term::stdout()).write_line(&styled_text).unwrap();
+    write_blank_line();
+}
+
 pub fn auto_style_commands(text: &str) -> String {
     let words: Vec<&str> = text.split_whitespace().collect();
 

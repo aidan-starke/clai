@@ -3,7 +3,7 @@ use clap::Parser;
 use console::style;
 use session_manager::SessionManager;
 use std::env;
-use std::io::{self, Write};
+use std::io;
 
 mod db;
 mod macros;
@@ -15,10 +15,6 @@ mod utils;
 #[command(name = "clai")]
 #[command(about = "Command Line Artificial Interface (CLAI)")]
 struct Cli {
-    #[arg(long, help = "Resume the last session")]
-    resume: bool,
-    #[arg(long, help = "Resume a specific named session")]
-    session: Option<String>,
     #[arg(long, help = "Run server")]
     server: bool,
 }
@@ -36,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
 
     let session_manager = SessionManager::new(server_url);
 
-    let mut session_id = session_manager.get_or_create_session(cli.session.as_deref()).await?;
+    let (mut session_id, mut current_session_name) = session_manager.get_or_create_session(None).await?;
 
     utils::clear_screen()?;
 
@@ -45,18 +41,20 @@ async fn main() -> anyhow::Result<()> {
         style("exit").red(),
         style("quit").red(),
     );
-    write_line!("Use /clear to clear the screen");
+    write_line!("🧹 Use /clear to clear the screen");
+    write_line!("✨ Use /new or /new <name> to create a new session.");
     write_line!("💾 Use /save <name> to save this session with a name.");
     write_line!("🗑️ Use /delete <name> to delete a saved session.");
     write_line!("📚 Use /list to show all saved sessions.");
     write_line!("🔄 Use /resume <name> to switch to a different session.");
     write_line!("🎭 Use /role <role_name> to set role, /role to view current role.");
     write_line!("───────────────────────────────────────────────────────────────────");
+    
+    utils::write_session_info(&current_session_name, session_id);
 
     loop {
         // Prompt for user input
-        print!("You: ");
-        io::stdout().flush()?;
+        utils::write_prompt(&format!("{} ", style("You:").green().bold()));
 
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -68,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
                     continue;
                 }
                 if message.eq_ignore_ascii_case("exit") || message.eq_ignore_ascii_case("quit") {
-                    write_line!("Goodbye! 👋");
+                    write_spaced!("Goodbye! 👋");
                     break;
                 }
 
@@ -93,7 +91,7 @@ async fn main() -> anyhow::Result<()> {
                                 continue;
                             }
                             Err(e) => {
-                                eprintln!("Failed to delete session: {}", e);
+                                utils::write_error(&format!("Failed to delete session: {}", e));
                                 continue;
                             }
                         }
@@ -108,7 +106,7 @@ async fn main() -> anyhow::Result<()> {
                     match session_manager.list_sessions().await {
                         Ok(_) => continue,
                         Err(e) => {
-                            eprintln!("Failed to list sessions: {}", e);
+                            utils::write_error(&format!("Failed to list sessions: {}", e));
                             continue;
                         }
                     }
@@ -120,12 +118,14 @@ async fn main() -> anyhow::Result<()> {
                     if !session_name.is_empty() {
                         match session_manager.get_session_by_name(session_name).await {
                             Ok(new_session_id) => {
-                                write_line!("🔄 Switched to session: '{}'", session_name);
+                                write_spaced!("🔄 Switched to session: '{}'", session_name);
                                 session_id = new_session_id;
+                                current_session_name = session_name.to_string();
+                                utils::write_session_info(&current_session_name, session_id);
                                 continue;
                             }
                             Err(e) => {
-                                eprintln!("Failed to resume session: {}", e);
+                                utils::write_error(&format!("Failed to resume session: {}", e));
                                 continue;
                             }
                         }
@@ -149,7 +149,7 @@ async fn main() -> anyhow::Result<()> {
                                 continue;
                             }
                             Err(e) => {
-                                eprintln!("Failed to get session info: {}", e);
+                                utils::write_error(&format!("Failed to get session info: {}", e));
                                 continue;
                             }
                         }
@@ -159,11 +159,11 @@ async fn main() -> anyhow::Result<()> {
                             // Set role
                             match session_manager.set_role(session_id, Some(role.to_string())).await {
                                 Ok(_) => {
-                                    write_line!("🎭 Role set to: '{}'", role);
+                                    write_spaced!("🎭 Role set to: '{}'", role);
                                     continue;
                                 }
                                 Err(e) => {
-                                    eprintln!("Failed to set role: {}", e);
+                                    utils::write_error(&format!("Failed to set role: {}", e));
                                     continue;
                                 }
                             }
@@ -180,16 +180,79 @@ async fn main() -> anyhow::Result<()> {
                     continue;
                 }
 
+                // Check for new command
+                if message.starts_with("/new") {
+                    if message == "/new" {
+                        // Create new session with auto-generated name
+                        match session_manager.create_new_session().await {
+                            Ok(new_session_id) => {
+                                session_id = new_session_id;
+                                current_session_name = format!("Session {}", new_session_id);
+                                write_spaced!("✨ Created new session (ID: {})", new_session_id);
+                                utils::write_session_info(&current_session_name, session_id);
+                                continue;
+                            }
+                            Err(e) => {
+                                utils::write_error(&format!("Failed to create new session: {}", e));
+                                continue;
+                            }
+                        }
+                    } else if message.starts_with("/new ") {
+                        let session_name = message.trim_start_matches("/new ").trim();
+                        if !session_name.is_empty() {
+                            // Create new session and immediately save it with the given name
+                            match session_manager.create_new_session().await {
+                                Ok(new_session_id) => {
+                                    match session_manager.save_session(new_session_id, session_name).await {
+                                        Ok(_) => {
+                                            session_id = new_session_id;
+                                            current_session_name = session_name.to_string();
+                                            write_spaced!("✨ Created and saved new session: '{}'", session_name);
+                                            utils::write_session_info(&current_session_name, session_id);
+                                            continue;
+                                        }
+                                        Err(e) => {
+                                            utils::write_error(&format!("Failed to save new session: {}", e));
+                                            continue;
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    utils::write_error(&format!("Failed to create new session: {}", e));
+                                    continue;
+                                }
+                            }
+                        } else {
+                            write_line!("Usage: /new <session_name>");
+                            continue;
+                        }
+                    }
+                }
+
                 let bar = indicatif::ProgressBar::new_spinner().with_message(style("Claude is thinking...").blue().to_string());
                 bar.enable_steady_tick(std::time::Duration::from_millis(100));
                 let response = session_manager.send_message(session_id, message).await?;
                 bar.finish_and_clear();
 
-                write_line!("Claude: {}", response);
+                utils::write_blank_line();
+                write_line!("{}", style("Claude:").blue().bold());
+                utils::write_blank_line();
+                
+                // Format the response with proper line breaks
+                for line in response.lines() {
+                    if line.trim().is_empty() {
+                        utils::write_blank_line();
+                    } else {
+                        write_line!("{}", line);
+                    }
+                }
+                
+                utils::write_blank_line();
                 write_line!("───────────────────────────────────────────────────────────────────");
+                utils::write_blank_line();
             }
             Err(e) => {
-                eprintln!("Error reading input: {}", e);
+                utils::write_error(&format!("Error reading input: {}", e));
                 break;
             }
         }

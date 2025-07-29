@@ -29,13 +29,30 @@ impl SessionManager {
         }
     }
 
-    pub async fn get_or_create_session(&self, session_name: Option<&str>) -> Result<i32> {
+    pub async fn get_or_create_session(&self, session_name: Option<&str>) -> Result<(i32, String)> {
         if let Some(name) = session_name {
             // Try to get session by name
-            self.get_session_by_name(name).await
+            let session_id = self.get_session_by_name(name).await?;
+            Ok((session_id, name.to_string()))
         } else {
             // Try to get the last session
-            self.get_last_session().await
+            match self.get_last_session().await {
+                Ok(session_id) => {
+                    // Get session info to determine the display name
+                    match self.get_session_info(session_id).await {
+                        Ok(session) => {
+                            let display_name = session.display_name.unwrap_or_else(|| format!("Session {}", session_id));
+                            Ok((session_id, display_name))
+                        }
+                        Err(_) => Ok((session_id, format!("Session {}", session_id)))
+                    }
+                }
+                Err(_) => {
+                    // No last session found, create a new one
+                    let session_id = self.create_new_session().await?;
+                    Ok((session_id, format!("Session {}", session_id)))
+                }
+            }
         }
     }
 

@@ -1,8 +1,11 @@
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use std::sync::Once;
 
 use crate::db::models::{Message, NewMessage, NewSession, Session};
 use crate::db::schema::{messages, sessions};
+
+static INIT: Once = Once::new();
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
@@ -14,10 +17,12 @@ impl ClaiDb {
     pub fn new() -> Self {
         let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "clai.db".to_string());
 
+        // Run migrations only once
         let mut connection = SqliteConnection::establish(&database_url).unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
-        // Run migrations
-        connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
+        INIT.call_once(|| {
+            connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
+        });
 
         ClaiDb { connection }
     }
@@ -31,8 +36,8 @@ impl ClaiDb {
     // CREATE
     pub fn create_session(&mut self, name: &str, display_name: Option<&str>) -> QueryResult<Session> {
         let conn = self.connection();
-        let new_session = NewSession { 
-            name, 
+        let new_session = NewSession {
+            name,
             display_name,
             role: None,
         };

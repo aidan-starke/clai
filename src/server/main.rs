@@ -1,5 +1,5 @@
 use axum::{
-    routing::{get, patch, post, put},
+    routing::{get, post, put},
     Router,
 };
 use tracing::info;

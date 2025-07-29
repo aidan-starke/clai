@@ -12,6 +12,17 @@ macro_rules! write_line {
 }
 
 #[macro_export]
+macro_rules! write_spaced {
+    ($($arg:tt)*) => {
+        {
+            let text = format!($($arg)*);
+            let styled_text = $crate::utils::auto_style_commands(&text);
+            $crate::utils::write_spaced_line(&styled_text);
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! handle_db_operation {
     ($operation:literal, $db_op:expr) => {
         match $db_op {
