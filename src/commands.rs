@@ -1,6 +1,8 @@
 use crate::{session_manager::SessionManager, utils, write_line, write_spaced};
 
-const COMMANDS: [&str; 7] = ["/clear", "/new", "/save", "/delete", "/list", "/resume", "/role"];
+const COMMANDS: [&str; 7] = [
+    "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role",
+];
 
 pub struct CommandHandler {
     session_manager: SessionManager,

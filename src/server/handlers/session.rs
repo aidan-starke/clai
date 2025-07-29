@@ -10,13 +10,21 @@ use axum::{
 use tracing::{info, warn};
 
 // CREATE operations
-pub async fn create_session(Json(payload): Json<CreateSessionRequest>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+pub async fn create_session(
+    Json(payload): Json<CreateSessionRequest>,
+) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Creating new session with name: {}", payload.name);
 
     let mut db = ClaiDb::get();
-    let session = handle_db_operation!("create session", db.create_session(&payload.name, payload.display_name.as_deref()));
+    let session = handle_db_operation!(
+        "create session",
+        db.create_session(&payload.name, payload.display_name.as_deref())
+    );
 
-    info!("Created session with ID: {}, name: {}", session.id, session.name);
+    info!(
+        "Created session with ID: {}, name: {}",
+        session.id, session.name
+    );
 
     utils::cleanup_old_sessions();
 
@@ -42,7 +50,10 @@ pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusC
         warn!("Failed to update session timestamp: {}", e);
     }
 
-    info!("Found last session: ID {}, name: {}", session.id, session.name);
+    info!(
+        "Found last session: ID {}, name: {}",
+        session.id, session.name
+    );
 
     let response = SessionResponse {
         id: session.id,
@@ -54,7 +65,9 @@ pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusC
     Ok(JsonResponse(response))
 }
 
-pub async fn get_session_by_name(Path(name): Path<String>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+pub async fn get_session_by_name(
+    Path(name): Path<String>,
+) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Getting session by name: {}", name);
 
     let mut db = ClaiDb::get();
@@ -98,7 +111,9 @@ pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, Statu
     Ok(JsonResponse(response))
 }
 
-pub async fn get_session_by_id(Path(session_id): Path<i32>) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+pub async fn get_session_by_id(
+    Path(session_id): Path<i32>,
+) -> Result<JsonResponse<SessionResponse>, StatusCode> {
     info!("Getting session by ID: {}", session_id);
 
     let mut db = ClaiDb::get();
@@ -121,10 +136,16 @@ pub async fn save_session(
     Path(session_id): Path<i32>,
     Json(payload): Json<SaveSessionRequest>,
 ) -> Result<JsonResponse<SessionResponse>, StatusCode> {
-    info!("Saving session {} with display name: {}", session_id, payload.display_name);
+    info!(
+        "Saving session {} with display name: {}",
+        session_id, payload.display_name
+    );
 
     let mut db = ClaiDb::get();
-    let session = handle_db_operation!("save session", db.update_session_display_name(session_id, &payload.display_name));
+    let session = handle_db_operation!(
+        "save session",
+        db.update_session_display_name(session_id, &payload.display_name)
+    );
 
     info!("Saved session {} as '{}'", session_id, payload.display_name);
 
@@ -142,10 +163,16 @@ pub async fn set_role(
     Path(session_id): Path<i32>,
     Json(payload): Json<SetRoleRequest>,
 ) -> Result<JsonResponse<SessionResponse>, StatusCode> {
-    info!("Setting role for session {} to: {:?}", session_id, payload.role);
+    info!(
+        "Setting role for session {} to: {:?}",
+        session_id, payload.role
+    );
 
     let mut db = ClaiDb::get();
-    let session = handle_db_operation!("set session role", db.update_session_role(session_id, payload.role.as_deref()));
+    let session = handle_db_operation!(
+        "set session role",
+        db.update_session_role(session_id, payload.role.as_deref())
+    );
 
     info!("Updated session {} role to: {:?}", session_id, payload.role);
 

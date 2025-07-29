@@ -51,7 +51,11 @@ pub fn write_command_help() {
     ];
 
     for (command, description) in &commands {
-        write_line!("  {} - {}", style(command).yellow(), style(description).dim());
+        write_line!(
+            "  {} - {}",
+            style(command).yellow(),
+            style(description).dim()
+        );
     }
     write_line!("");
 }
@@ -63,7 +67,9 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
     let mut selected_index = 0;
     let mut dropdown_lines = 0;
 
-    let commands = ["/clear", "/new", "/save", "/delete", "/list", "/resume", "/role"];
+    let commands = [
+        "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role",
+    ];
 
     loop {
         // Clear any existing dropdown
@@ -87,7 +93,11 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
 
         // Show dropdown if user typed '/'
         if show_dropdown {
-            let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+            let filtered_commands: Vec<&str> = commands
+                .iter()
+                .filter(|cmd| cmd.starts_with(&input))
+                .copied()
+                .collect();
 
             if !filtered_commands.is_empty() {
                 dropdown_lines = filtered_commands.len();
@@ -114,7 +124,11 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
             Key::Enter => {
                 // Select command if dropdown is showing
                 if show_dropdown {
-                    let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+                    let filtered_commands: Vec<&str> = commands
+                        .iter()
+                        .filter(|cmd| cmd.starts_with(&input))
+                        .copied()
+                        .collect();
 
                     if !filtered_commands.is_empty() && selected_index < filtered_commands.len() {
                         input = filtered_commands[selected_index].to_string();
@@ -147,7 +161,11 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
             }
             Key::ArrowDown => {
                 if show_dropdown {
-                    let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+                    let filtered_commands: Vec<&str> = commands
+                        .iter()
+                        .filter(|cmd| cmd.starts_with(&input))
+                        .copied()
+                        .collect();
                     if !filtered_commands.is_empty() {
                         selected_index = (selected_index + 1) % filtered_commands.len();
                     }
@@ -155,7 +173,11 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
             }
             Key::ArrowUp => {
                 if show_dropdown {
-                    let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+                    let filtered_commands: Vec<&str> = commands
+                        .iter()
+                        .filter(|cmd| cmd.starts_with(&input))
+                        .copied()
+                        .collect();
                     if !filtered_commands.is_empty() {
                         selected_index = if selected_index == 0 {
                             filtered_commands.len() - 1
@@ -189,10 +211,14 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
 }
 
 pub async fn ensure_server_running() -> anyhow::Result<()> {
-    let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
+    let server_url =
+        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
 
     // Quick health check
-    if reqwest::get(&format!("{}/health", server_url)).await.is_ok() {
+    if reqwest::get(&format!("{}/health", server_url))
+        .await
+        .is_ok()
+    {
         return Ok(()); // Server already running
     }
 
@@ -201,7 +227,10 @@ pub async fn ensure_server_running() -> anyhow::Result<()> {
 
     // Wait for server to be ready, 5 second timeout
     for _ in 0..50 {
-        if reqwest::get(&format!("{}/health", server_url)).await.is_ok() {
+        if reqwest::get(&format!("{}/health", server_url))
+            .await
+            .is_ok()
+        {
             return Ok(());
         }
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;

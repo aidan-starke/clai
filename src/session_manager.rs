@@ -24,7 +24,9 @@ impl SessionManager {
     }
 
     pub fn require_current_session(&self) -> Result<i32> {
-        self.current_session.get().ok_or_else(|| anyhow::anyhow!("No current session set"))
+        self.current_session
+            .get()
+            .ok_or_else(|| anyhow::anyhow!("No current session set"))
     }
 
     pub async fn init(&self, session_name: Option<&str>) -> Result<(i32, String)> {
@@ -39,7 +41,9 @@ impl SessionManager {
                     // Get session info to determine the display name
                     match self.get_session_info_by_id(session_id).await {
                         Ok(session) => {
-                            let display_name = session.display_name.unwrap_or_else(|| format!("Session {}", session_id));
+                            let display_name = session
+                                .display_name
+                                .unwrap_or_else(|| format!("Session {}", session_id));
                             (session_id, display_name)
                         }
                         Err(_) => (session_id, format!("Session {}", session_id)),
@@ -76,12 +80,20 @@ impl SessionManager {
         } else if response.status() == reqwest::StatusCode::NOT_FOUND {
             anyhow::bail!("Session '{}' not found", session_name);
         } else {
-            anyhow::bail!("Failed to get session '{}': {}", session_name, response.status());
+            anyhow::bail!(
+                "Failed to get session '{}': {}",
+                session_name,
+                response.status()
+            );
         }
     }
 
     pub async fn get_last_session(&self) -> Result<i32> {
-        let response = self.client.get(&format!("{}/sessions/last", self.server_url)).send().await?;
+        let response = self
+            .client
+            .get(&format!("{}/sessions/last", self.server_url))
+            .send()
+            .await?;
 
         if response.status().is_success() {
             let session: SessionResponse = response.json().await?;
@@ -205,7 +217,11 @@ impl SessionManager {
     }
 
     pub async fn list_sessions(&self) -> Result<()> {
-        let response = self.client.get(&format!("{}/sessions", self.server_url)).send().await?;
+        let response = self
+            .client
+            .get(&format!("{}/sessions", self.server_url))
+            .send()
+            .await?;
 
         if !response.status().is_success() {
             anyhow::bail!("Failed to list sessions: {}", response.status());

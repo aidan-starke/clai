@@ -16,16 +16,22 @@ pub struct ClaiDb {
 impl ClaiDb {
     fn new() -> Self {
         let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "clai.db".to_string());
-        let mut connection = SqliteConnection::establish(&database_url).unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+        let mut connection = SqliteConnection::establish(&database_url)
+            .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
         // Run migrations
-        connection.run_pending_migrations(MIGRATIONS).expect("Failed to run migrations");
+        connection
+            .run_pending_migrations(MIGRATIONS)
+            .expect("Failed to run migrations");
 
         ClaiDb { connection }
     }
 
     pub fn get() -> MutexGuard<'static, ClaiDb> {
-        DATABASE.get_or_init(|| Mutex::new(ClaiDb::new())).lock().unwrap()
+        DATABASE
+            .get_or_init(|| Mutex::new(ClaiDb::new()))
+            .lock()
+            .unwrap()
     }
 
     fn connection(&mut self) -> &mut SqliteConnection {
@@ -35,7 +41,11 @@ impl ClaiDb {
     // === SESSION CRUD OPERATIONS ===
 
     // CREATE
-    pub fn create_session(&mut self, name: &str, display_name: Option<&str>) -> QueryResult<Session> {
+    pub fn create_session(
+        &mut self,
+        name: &str,
+        display_name: Option<&str>,
+    ) -> QueryResult<Session> {
         let conn = self.connection();
         let new_session = NewSession {
             name,
@@ -43,14 +53,18 @@ impl ClaiDb {
             role: None,
         };
 
-        diesel::insert_into(sessions::table).values(&new_session).execute(conn)?;
+        diesel::insert_into(sessions::table)
+            .values(&new_session)
+            .execute(conn)?;
 
         sessions::table.order(sessions::id.desc()).first(conn)
     }
 
     // READ
     pub fn get_last_session(&mut self) -> QueryResult<Session> {
-        sessions::table.order(sessions::updated_at.desc()).first(self.connection())
+        sessions::table
+            .order(sessions::updated_at.desc())
+            .first(self.connection())
     }
 
     pub fn get_session_by_name(&mut self, name: &str) -> QueryResult<Session> {
@@ -72,7 +86,11 @@ impl ClaiDb {
     }
 
     // UPDATE
-    pub fn update_session_display_name(&mut self, session_id: i32, display_name: &str) -> QueryResult<Session> {
+    pub fn update_session_display_name(
+        &mut self,
+        session_id: i32,
+        display_name: &str,
+    ) -> QueryResult<Session> {
         let conn = self.connection();
         diesel::update(sessions::table.find(session_id))
             .set(sessions::display_name.eq(display_name))
@@ -91,7 +109,11 @@ impl ClaiDb {
         Ok(())
     }
 
-    pub fn update_session_role(&mut self, session_id: i32, role: Option<&str>) -> QueryResult<Session> {
+    pub fn update_session_role(
+        &mut self,
+        session_id: i32,
+        role: Option<&str>,
+    ) -> QueryResult<Session> {
         let conn = self.connection();
         diesel::update(sessions::table.find(session_id))
             .set(sessions::role.eq(role))
@@ -116,7 +138,9 @@ impl ClaiDb {
             .execute(conn)?;
 
         // Then delete the session
-        diesel::delete(sessions::table).filter(sessions::id.eq(session.id)).execute(conn)?;
+        diesel::delete(sessions::table)
+            .filter(sessions::id.eq(session.id))
+            .execute(conn)?;
 
         Ok(())
     }
@@ -136,15 +160,23 @@ impl ClaiDb {
             // Only delete sessions that don't have a display_name (are not saved) and are not the most recent
             let deleted_messages = diesel::delete(messages::table)
                 .filter(
-                    messages::session_id
-                        .ne(keep_session_id)
-                        .and(messages::session_id.eq_any(sessions::table.select(sessions::id).filter(sessions::display_name.is_null()))),
+                    messages::session_id.ne(keep_session_id).and(
+                        messages::session_id.eq_any(
+                            sessions::table
+                                .select(sessions::id)
+                                .filter(sessions::display_name.is_null()),
+                        ),
+                    ),
                 )
                 .execute(conn)?;
 
             // Delete old unnamed sessions (preserve named sessions)
             let deleted_sessions = diesel::delete(sessions::table)
-                .filter(sessions::id.ne(keep_session_id).and(sessions::display_name.is_null()))
+                .filter(
+                    sessions::id
+                        .ne(keep_session_id)
+                        .and(sessions::display_name.is_null()),
+                )
                 .execute(conn)?;
 
             Ok(deleted_messages + deleted_sessions)
@@ -157,11 +189,22 @@ impl ClaiDb {
     // === MESSAGE CRUD OPERATIONS ===
 
     // CREATE
-    pub fn create_message(&mut self, session_id: i32, role: &str, content: &str) -> QueryResult<Message> {
+    pub fn create_message(
+        &mut self,
+        session_id: i32,
+        role: &str,
+        content: &str,
+    ) -> QueryResult<Message> {
         let conn = self.connection();
-        let new_message = NewMessage { session_id, role, content };
+        let new_message = NewMessage {
+            session_id,
+            role,
+            content,
+        };
 
-        diesel::insert_into(messages::table).values(&new_message).execute(conn)?;
+        diesel::insert_into(messages::table)
+            .values(&new_message)
+            .execute(conn)?;
 
         messages::table.order(messages::id.desc()).first(conn)
     }

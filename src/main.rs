@@ -32,7 +32,8 @@ async fn main() -> anyhow::Result<()> {
         utils::ensure_server_running().await?;
     }
 
-    let server_url = env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
+    let server_url =
+        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
 
     let session_manager = SessionManager::new(server_url);
     let command_handler = CommandHandler::new(session_manager.clone());
@@ -76,7 +77,8 @@ async fn main() -> anyhow::Result<()> {
                 }
 
                 // Handle chat message
-                let bar = indicatif::ProgressBar::new_spinner().with_message(style("Claude is thinking...").blue().to_string());
+                let bar = indicatif::ProgressBar::new_spinner()
+                    .with_message(style("Claude is thinking...").blue().to_string());
                 bar.enable_steady_tick(std::time::Duration::from_millis(100));
                 let response = session_manager.send_message(message).await?;
                 bar.finish_and_clear();
@@ -92,7 +94,9 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
 
-                write_spaced!("───────────────────────────────────────────────────────────────────");
+                write_spaced!(
+                    "───────────────────────────────────────────────────────────────────"
+                );
             }
             Err(e) => {
                 utils::write_error(&format!("Error reading input: {}", e));

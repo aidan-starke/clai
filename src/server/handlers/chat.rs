@@ -35,8 +35,14 @@ struct ClaudeContent {
     text: String,
 }
 
-pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>) -> Result<JsonResponse<ChatResponse>, StatusCode> {
-    info!("Chat request for session {} with message: {}", session_id, payload.message);
+pub async fn chat(
+    Path(session_id): Path<i32>,
+    Json(payload): Json<ChatRequest>,
+) -> Result<JsonResponse<ChatResponse>, StatusCode> {
+    info!(
+        "Chat request for session {} with message: {}",
+        session_id, payload.message
+    );
 
     let api_key = env::var("ANTHROPIC_API_KEY").map_err(|e| {
         error!("Failed to get ANTHROPIC_API_KEY: {}", e);
@@ -114,13 +120,27 @@ pub async fn chat(Path(session_id): Path<i32>, Json(payload): Json<ChatRequest>)
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let text = claude_response.content.into_iter().map(|c| c.text).collect::<Vec<_>>().join("");
+    let text = claude_response
+        .content
+        .into_iter()
+        .map(|c| c.text)
+        .collect::<Vec<_>>()
+        .join("");
 
     let mut db = ClaiDb::get();
-    handle_db_operation!("store user message", db.create_message(session_id, "user", &payload.message));
-    handle_db_operation!("store assistant message", db.create_message(session_id, "assistant", &text));
+    handle_db_operation!(
+        "store user message",
+        db.create_message(session_id, "user", &payload.message)
+    );
+    handle_db_operation!(
+        "store assistant message",
+        db.create_message(session_id, "assistant", &text)
+    );
 
-    info!("Successfully processed chat request for session {}", session_id);
+    info!(
+        "Successfully processed chat request for session {}",
+        session_id
+    );
 
     let chat_response = ChatResponse { response: text };
 
