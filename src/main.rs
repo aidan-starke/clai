@@ -38,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
     let session_manager = SessionManager::new(server_url);
     let command_handler = CommandHandler::new(session_manager.clone());
 
-    let (session_id, session_name) = session_manager.init(None).await?;
+    let (session_id, session_name) = session_manager.init().await?;
 
     utils::clear_screen()?;
 

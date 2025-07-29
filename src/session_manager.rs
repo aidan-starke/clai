@@ -29,31 +29,24 @@ impl SessionManager {
             .ok_or_else(|| anyhow::anyhow!("No current session set"))
     }
 
-    pub async fn init(&self, session_name: Option<&str>) -> Result<(i32, String)> {
-        let (session_id, display_name) = if let Some(name) = session_name {
-            // Try to get session by name
-            let session_id = self.get_session_by_name(name).await?;
-            (session_id, name.to_string())
-        } else {
-            // Try to get the last session
-            match self.get_last_session().await {
-                Ok(session_id) => {
-                    // Get session info to determine the display name
-                    match self.get_session_info_by_id(session_id).await {
-                        Ok(session) => {
-                            let display_name = session
-                                .display_name
-                                .unwrap_or_else(|| format!("Session {}", session_id));
-                            (session_id, display_name)
-                        }
-                        Err(_) => (session_id, format!("Session {}", session_id)),
+    pub async fn init(&self) -> Result<(i32, String)> {
+        let (session_id, display_name) = match self.get_last_session().await {
+            Ok(session_id) => {
+                // Get session info to determine the display name
+                match self.get_session_info_by_id(session_id).await {
+                    Ok(session) => {
+                        let display_name = session
+                            .display_name
+                            .unwrap_or_else(|| format!("Session {}", session_id));
+                        (session_id, display_name)
                     }
+                    Err(_) => (session_id, format!("Session {}", session_id)),
                 }
-                Err(_) => {
-                    // No last session found, create a new one
-                    let session_id = self.create_new_session().await?;
-                    (session_id, format!("Session {}", session_id))
-                }
+            }
+            Err(_) => {
+                // No last session found, create a new one
+                let session_id = self.create_new_session().await?;
+                (session_id, format!("Session {}", session_id))
             }
         };
 
