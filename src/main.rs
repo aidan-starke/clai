@@ -3,7 +3,6 @@ use clap::Parser;
 use console::style;
 use session_manager::SessionManager;
 use std::env;
-use std::io;
 
 mod db;
 mod macros;
@@ -47,12 +46,8 @@ async fn main() -> anyhow::Result<()> {
     utils::write_session_info(&current_session_name, session_id);
 
     loop {
-        // Prompt for user input
-        utils::write_prompt(&format!("{} ", style("You:").green().bold()));
-
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(_) => {
+        match utils::read_input_with_autocomplete() {
+            Ok(input) => {
                 let message = input.trim();
 
                 // Check for exit commands

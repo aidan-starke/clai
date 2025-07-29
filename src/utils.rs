@@ -1,4 +1,4 @@
-use console::{style, Term};
+use console::{style, Key, Term};
 use std::sync::OnceLock;
 
 use crate::write_line;
@@ -14,10 +14,6 @@ pub fn write_spaced_line(text: &str) {
     write_line!("");
     write_line!("{}", text);
     write_line!("");
-}
-
-pub fn write_prompt(text: &str) {
-    TERM.get_or_init(|| Term::stdout()).write_str(text).unwrap();
 }
 
 pub fn write_error(text: &str) {
@@ -38,7 +34,7 @@ pub fn write_session_info(session_name: &str, session_id: i32) {
 
 pub fn write_command_help() {
     write_line!("");
-    write_line!("{}", style("💡 Available commands:").yellow().bold());
+    write_line!("💡 Available commands:");
 
     let commands = [
         ("🧹 /clear", "Clear the screen"),
@@ -56,47 +52,131 @@ pub fn write_command_help() {
     write_line!("");
 }
 
-pub fn auto_style_commands(text: &str) -> String {
-    let words: Vec<&str> = text.split_whitespace().collect();
+pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
+    let term = TERM.get_or_init(|| Term::stdout());
+    let mut input = String::new();
+    let mut show_dropdown = false;
+    let mut selected_index = 0;
+    let mut dropdown_lines = 0;
 
-    // Track which words have been processed as pairs
-    let mut processed = vec![false; words.len()];
+    let commands = ["/clear", "/new", "/save", "/delete", "/list", "/resume", "/role"];
 
-    // First pass: handle command + argument pairs using map_windows
-    let pairs: Vec<_> = words
-        .iter()
-        .enumerate()
-        .map_windows(|[(i, first), (j, second)]| {
-            if first.starts_with('/') && first.len() > 1 && second.starts_with('<') && second.ends_with('>') {
-                processed[*i] = true;
-                processed[*j] = true;
-                Some((*i, format!("{} {}", style(first).yellow(), style(second).yellow())))
-            } else {
-                None
+    loop {
+        // Clear any existing dropdown
+        if dropdown_lines > 0 {
+            for _ in 0..dropdown_lines {
+                term.move_cursor_down(1)?;
+                term.clear_line()?;
             }
-        })
-        .filter_map(|x| x)
-        .collect();
-
-    // Build result with pairs and individual words
-    let mut res = Vec::new();
-
-    for (i, word) in words.iter().enumerate() {
-        if processed[i] {
-            // Check if this is the start of a pair
-            if let Some((_, styled_pair)) = pairs.iter().find(|(pair_i, _)| *pair_i == i) {
-                res.push(styled_pair.clone());
+            for _ in 0..dropdown_lines {
+                term.move_cursor_up(1)?;
             }
-            // Skip if this word was part of a pair
-        } else {
-            // Handle individual words
-            if word.starts_with('/') || word.starts_with("Ctrl") && word.len() > 1 {
-                res.push(style(word).yellow().to_string());
-            } else {
-                res.push(word.to_string());
+            dropdown_lines = 0;
+        }
+
+        // Show current input
+        term.clear_line()?;
+        term.write_str(&format!("You: {}", input))?;
+
+        // Show dropdown if user typed '/'
+        if show_dropdown {
+            let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+
+            if !filtered_commands.is_empty() {
+                dropdown_lines = filtered_commands.len();
+                term.write_line("")?;
+                for (i, cmd) in filtered_commands.iter().enumerate() {
+                    if i == selected_index {
+                        term.write_line(&format!("  → {}", style(cmd).bold()))?;
+                    } else {
+                        term.write_line(&format!("    {}", style(cmd).dim()))?;
+                    }
+                }
+                // Move cursor back to input line
+                for _ in 0..dropdown_lines {
+                    term.move_cursor_up(1)?;
+                }
+                term.move_cursor_up(1)?; // Go above the empty line too
             }
         }
-    }
 
-    res.join(" ")
+        // Read next key
+        let key = term.read_key()?;
+
+        match key {
+            Key::Enter => {
+                // Select command if dropdown is showing
+                if show_dropdown {
+                    let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+
+                    if !filtered_commands.is_empty() && selected_index < filtered_commands.len() {
+                        input = filtered_commands[selected_index].to_string();
+                    }
+                }
+
+                // Clear dropdown and finalize
+                if dropdown_lines > 0 {
+                    for _ in 0..dropdown_lines {
+                        term.move_cursor_down(1)?;
+                        term.clear_line()?;
+                    }
+                    for _ in 0..dropdown_lines {
+                        term.move_cursor_up(1)?;
+                    }
+                    term.move_cursor_down(1)?; // Move past the empty line
+                    term.clear_line()?;
+                    term.move_cursor_up(1)?;
+                }
+
+                term.clear_line()?;
+                term.write_str(&format!("You: {}", input))?;
+                term.write_line("")?;
+                return Ok(input);
+            }
+            Key::Escape => {
+                show_dropdown = false;
+                selected_index = 0;
+                // Dropdown will be cleared on next loop iteration
+            }
+            Key::ArrowDown => {
+                if show_dropdown {
+                    let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+                    if !filtered_commands.is_empty() {
+                        selected_index = (selected_index + 1) % filtered_commands.len();
+                    }
+                }
+            }
+            Key::ArrowUp => {
+                if show_dropdown {
+                    let filtered_commands: Vec<&str> = commands.iter().filter(|cmd| cmd.starts_with(&input)).copied().collect();
+                    if !filtered_commands.is_empty() {
+                        selected_index = if selected_index == 0 {
+                            filtered_commands.len() - 1
+                        } else {
+                            selected_index - 1
+                        };
+                    }
+                }
+            }
+            Key::Backspace => {
+                if !input.is_empty() {
+                    input.pop();
+                    if !input.starts_with('/') {
+                        show_dropdown = false;
+                        selected_index = 0;
+                    }
+                }
+            }
+            Key::Char(c) => {
+                input.push(c);
+                if input.starts_with('/') {
+                    show_dropdown = true;
+                    selected_index = 0;
+                } else {
+                    show_dropdown = false;
+                }
+            }
+            _ => {}
+        }
+    }
 }

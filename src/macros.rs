@@ -1,13 +1,7 @@
-/// Writes a line of text to the terminal with automatic command styling.
+/// Writes a line of text to the terminal.
 ///
 /// This macro provides a convenient way to output formatted text to the terminal
-/// while automatically applying styling to commands and special keywords.
-///
-/// # Features
-/// - Automatic command styling: `/command` text is highlighted in yellow
-/// - Argument styling: `<argument>` placeholders are highlighted in yellow
-/// - Speaker coloring: "You:" (green) and "Claude:" (blue) are automatically styled
-/// - Consistent terminal output: All text goes through the same terminal instance
+/// using a consistent terminal instance.
 ///
 /// # Examples
 /// ```
@@ -16,20 +10,13 @@
 /// write_line!("User: {} said {}", name, message);
 /// write_line!(""); // Blank line
 /// ```
-///
-/// # Command Styling
-/// The macro automatically detects and styles:
-/// - Commands starting with `/` (e.g., `/save`, `/new`)
-/// - Arguments in angle brackets (e.g., `<name>`, `<role>`)
-/// - Keyboard shortcuts starting with "Ctrl" (e.g., `Ctrl+C`)
 #[macro_export]
 macro_rules! write_line {
     ($($arg:tt)*) => {
         {
             let text = format!($($arg)*);
-            let styled_text = $crate::utils::auto_style_commands(&text);
             $crate::utils::TERM.get_or_init(|| console::Term::stdout())
-                .write_line(&styled_text)
+                .write_line(&text)
                 .unwrap();
         }
     };
@@ -64,8 +51,7 @@ macro_rules! write_spaced {
     ($($arg:tt)*) => {
         {
             let text = format!($($arg)*);
-            let styled_text = $crate::utils::auto_style_commands(&text);
-            $crate::utils::write_spaced_line(&styled_text);
+            $crate::utils::write_spaced_line(&text);
         }
     };
 }
