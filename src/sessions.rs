@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::utils::types::*;
 use anyhow::Result;
 use reqwest::Client;
 use std::cell::Cell;

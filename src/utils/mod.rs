@@ -1,9 +1,16 @@
+pub mod macros;
+pub mod types;
+
 use console::{style, Key, Term};
 use std::{env, sync::OnceLock};
 
-use crate::{server, write_line};
+use crate::{db::ClaiDb, server, write_line};
 
 pub static TERM: OnceLock<Term> = OnceLock::new();
+
+pub const COMMANDS: [&str; 7] = [
+    "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role",
+];
 
 pub fn get_term() -> &'static Term {
     TERM.get_or_init(|| Term::stdout())
@@ -67,10 +74,6 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
     let mut selected_index = 0;
     let mut dropdown_lines = 0;
 
-    let commands = [
-        "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role",
-    ];
-
     loop {
         // Clear any existing dropdown
         if dropdown_lines > 0 {
@@ -93,7 +96,7 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
 
         // Show dropdown if user typed '/'
         if show_dropdown {
-            let filtered_commands: Vec<&str> = commands
+            let filtered_commands: Vec<&str> = COMMANDS
                 .iter()
                 .filter(|cmd| cmd.starts_with(&input))
                 .copied()
@@ -124,7 +127,7 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
             Key::Enter => {
                 // Select command if dropdown is showing
                 if show_dropdown {
-                    let filtered_commands: Vec<&str> = commands
+                    let filtered_commands: Vec<&str> = COMMANDS
                         .iter()
                         .filter(|cmd| cmd.starts_with(&input))
                         .copied()
@@ -161,7 +164,7 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
             }
             Key::ArrowDown => {
                 if show_dropdown {
-                    let filtered_commands: Vec<&str> = commands
+                    let filtered_commands: Vec<&str> = COMMANDS
                         .iter()
                         .filter(|cmd| cmd.starts_with(&input))
                         .copied()
@@ -173,7 +176,7 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
             }
             Key::ArrowUp => {
                 if show_dropdown {
-                    let filtered_commands: Vec<&str> = commands
+                    let filtered_commands: Vec<&str> = COMMANDS
                         .iter()
                         .filter(|cmd| cmd.starts_with(&input))
                         .copied()
@@ -237,4 +240,23 @@ pub async fn ensure_server_running() -> anyhow::Result<()> {
     }
 
     Err(anyhow::anyhow!("Server failed to start"))
+}
+
+pub fn cleanup_old_sessions() {
+    tokio::spawn(async {
+        tracing::info!("Starting background database cleanup...");
+        let mut db = ClaiDb::get();
+        match db.cleanup_old_sessions() {
+            Ok(deleted_count) => {
+                if deleted_count > 0 {
+                    tracing::info!("Cleaned up {} old database records", deleted_count);
+                } else {
+                    tracing::info!("No old sessions to clean up");
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to cleanup old sessions: {}", e);
+            }
+        }
+    });
 }

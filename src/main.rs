@@ -2,15 +2,13 @@
 use clap::Parser;
 use commands::CommandHandler;
 use console::style;
-use session_manager::SessionManager;
+use sessions::SessionManager;
 use std::env;
 
 mod commands;
 mod db;
-mod macros;
 mod server;
-mod session_manager;
-mod types;
+mod sessions;
 mod utils;
 
 #[derive(Parser)]

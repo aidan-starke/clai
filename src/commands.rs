@@ -1,8 +1,4 @@
-use crate::{session_manager::SessionManager, utils, write_line, write_spaced};
-
-const COMMANDS: [&str; 7] = [
-    "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role",
-];
+use crate::{sessions::SessionManager, utils, write_line, write_spaced};
 
 pub struct CommandHandler {
     session_manager: SessionManager,
@@ -16,7 +12,7 @@ impl CommandHandler {
     // ===== Command Dispatch =====
 
     pub async fn handle_command(&self, message: &str) {
-        let is_valid_command = COMMANDS
+        let is_valid_command = utils::COMMANDS
             .iter()
             .any(|&cmd| message == cmd || message.starts_with(&format!("{} ", cmd)));
 

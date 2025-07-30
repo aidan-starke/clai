@@ -1,6 +1,6 @@
 use crate::db::ClaiDb;
 use crate::handle_db_operation;
-use crate::types::*;
+use crate::utils::types::*;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,

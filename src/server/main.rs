@@ -5,7 +5,7 @@ use axum::{
 use tracing::info;
 
 use crate::server::handlers;
-use crate::server::utils;
+use crate::utils;
 
 pub async fn run_server(debug_mode: bool) -> anyhow::Result<()> {
     dotenv::dotenv().ok();
