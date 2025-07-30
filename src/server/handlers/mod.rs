@@ -1,4 +1,5 @@
 pub mod chat;
+pub mod models;
 pub mod session;
 
 use axum::http::StatusCode;

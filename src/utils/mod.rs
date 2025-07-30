@@ -52,6 +52,7 @@ pub fn write_command_help() {
         ("📚 /list", "Show all saved sessions"),
         ("🔄 /resume <name>", "Switch to a different session"),
         ("🎭 /role [role]", "Set or view current role"),
+        ("🤖 /model [number]", "View or set the AI model for this session"),
     ];
 
     for (command, description) in &commands {

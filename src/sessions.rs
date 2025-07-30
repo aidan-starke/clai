@@ -220,6 +220,42 @@ impl SessionManager {
         Ok(sessions)
     }
 
+    // ===== Model Operations =====
+
+    pub async fn get_available_models(&self) -> Result<Vec<ClaudeModel>> {
+        let response = self
+            .client
+            .get(&format!("{}/models", self.server_url))
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let models: Vec<ClaudeModel> = response.json().await?;
+            Ok(models)
+        } else {
+            return Err(ClaiError::server(format!("Failed to get models: {}", response.status())));
+        }
+    }
+
+    pub async fn set_model(&self, model: String) -> Result<()> {
+        let session_id = self.require_current_session()?;
+
+        let request = SetModelRequest { model };
+
+        let response = self
+            .client
+            .put(&format!("{}/sessions/{}/model", self.server_url, session_id))
+            .json(&request)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(ClaiError::server(format!("Failed to set model: {}", response.status())));
+        }
+
+        Ok(())
+    }
+
     // ===== Chat Operations =====
 
     pub async fn send_message(&self, message: &str) -> Result<String> {

@@ -33,7 +33,9 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
             get(handlers::session::get_session_by_id).patch(handlers::session::save_session),
         )
         .route("/sessions/{id}/role", put(handlers::session::set_role))
-        .route("/sessions/{id}/chat", post(handlers::chat::chat));
+        .route("/sessions/{id}/model", put(handlers::session::set_model))
+        .route("/sessions/{id}/chat", post(handlers::chat::chat))
+        .route("/models", get(handlers::models::get_models));
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT)).await?;
     info!("Server running on http://{}:{}", DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT);

@@ -18,9 +18,13 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         role -> Nullable<Text>,
+        model -> Nullable<Text>,
     }
 }
 
 diesel::joinable!(messages -> sessions (session_id));
 
-diesel::allow_tables_to_appear_in_same_query!(messages, sessions,);
+diesel::allow_tables_to_appear_in_same_query!(
+    messages,
+    sessions,
+);

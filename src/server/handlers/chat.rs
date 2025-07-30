@@ -1,7 +1,7 @@
 use crate::db::ClaiDb;
 use crate::error::ClaiError;
 use crate::handle_db_operation;
-use crate::utils::{constants::CLAUDE_MAX_TOKENS, types::*};
+use crate::utils::{constants::{CLAUDE_MAX_TOKENS, DEFAULT_MODEL}, types::*};
 use axum::{
     extract::{Json, Path},
     response::Json as JsonResponse,
@@ -91,7 +91,7 @@ pub async fn chat(
     });
 
     let claude_request = ClaudeRequest {
-        model: "claude-sonnet-4-20250514".to_string(),
+        model: session.model.as_deref().unwrap_or(DEFAULT_MODEL).to_string(),
         max_tokens: CLAUDE_MAX_TOKENS,
         messages,
         system: system_message,

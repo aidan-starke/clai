@@ -13,6 +13,7 @@ pub struct SessionResponse {
     pub name: String,
     pub display_name: Option<String>,
     pub role: Option<String>,
+    pub model: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -34,4 +35,22 @@ pub struct ChatRequest {
 #[derive(Serialize, Deserialize)]
 pub struct ChatResponse {
     pub response: String,
+}
+
+// Model types
+#[derive(Serialize, Deserialize)]
+pub struct SetModelRequest {
+    pub model: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ClaudeModel {
+    pub id: String,
+    pub display_name: String,
+    pub created_at: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ModelsResponse {
+    pub data: Vec<ClaudeModel>,
 }

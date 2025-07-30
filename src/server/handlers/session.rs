@@ -33,6 +33,7 @@ pub async fn create_session(
         name: session.name,
         display_name: session.display_name,
         role: session.role,
+        model: session.model,
     };
 
     Ok(JsonResponse(response))
@@ -60,6 +61,7 @@ pub async fn get_last_session() -> std::result::Result<JsonResponse<SessionRespo
         name: session.name,
         display_name: session.display_name,
         role: session.role,
+        model: session.model,
     };
 
     Ok(JsonResponse(response))
@@ -85,6 +87,7 @@ pub async fn get_session_by_name(
         name: session.name,
         display_name: session.display_name,
         role: session.role,
+        model: session.model,
     };
 
     Ok(JsonResponse(response))
@@ -103,6 +106,7 @@ pub async fn list_sessions() -> std::result::Result<JsonResponse<Vec<SessionResp
             name: session.name,
             display_name: session.display_name,
             role: session.role,
+            model: session.model,
         })
         .collect();
 
@@ -126,6 +130,7 @@ pub async fn get_session_by_id(
         name: session.name,
         display_name: session.display_name,
         role: session.role,
+        model: session.model,
     };
 
     Ok(JsonResponse(response))
@@ -154,6 +159,7 @@ pub async fn save_session(
         name: session.name,
         display_name: session.display_name,
         role: session.role,
+        model: session.model,
     };
 
     Ok(JsonResponse(response))
@@ -181,6 +187,35 @@ pub async fn set_role(
         name: session.name,
         display_name: session.display_name,
         role: session.role,
+        model: session.model,
+    };
+
+    Ok(JsonResponse(response))
+}
+
+pub async fn set_model(
+    Path(session_id): Path<i32>,
+    Json(payload): Json<SetModelRequest>,
+) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+    info!(
+        "Setting model for session {} to: {}",
+        session_id, payload.model
+    );
+
+    let mut db = ClaiDb::get();
+    let session = handle_db_operation!(
+        "set session model",
+        db.update_session_model(session_id, &payload.model)
+    );
+
+    info!("Updated session {} model to: {}", session_id, payload.model);
+
+    let response = SessionResponse {
+        id: session.id,
+        name: session.name,
+        display_name: session.display_name,
+        role: session.role,
+        model: session.model,
     };
 
     Ok(JsonResponse(response))
