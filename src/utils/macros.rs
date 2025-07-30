@@ -59,8 +59,8 @@ macro_rules! write_spaced {
 /// Handles database operations with consistent error handling and logging.
 ///
 /// This macro wraps database operations to provide standardized error handling
-/// for Diesel ORM operations, converting database errors into appropriate HTTP
-/// status codes and logging errors for debugging.
+/// for Diesel ORM operations, converting database errors into ClaiError types
+/// and logging errors for debugging.
 ///
 /// # Parameters
 /// - `$operation`: A string literal describing the operation for logging
@@ -68,38 +68,32 @@ macro_rules! write_spaced {
 ///
 /// # Return Value
 /// - On success: Returns the unwrapped value from the database operation
-/// - On `NotFound` error: Returns `HTTP 404 NOT_FOUND` status code
-/// - On other errors: Returns `HTTP 500 INTERNAL_SERVER_ERROR` status code
+/// - On error: Returns a `ClaiError::Database` variant with proper logging
 ///
 /// # Examples
 /// ```
-/// let session = handle_db_operation!("get session", db.get_session_by_id(id));
-/// let message = handle_db_operation!("create message", db.create_message(session_id, "user", content));
-/// let sessions = handle_db_operation!("list sessions", db.list_named_sessions());
+/// let session = handle_db_operation!("get session", db.get_session_by_id(id))?;
+/// let message = handle_db_operation!("create message", db.create_message(session_id, "user", content))?;
+/// let sessions = handle_db_operation!("list sessions", db.list_named_sessions())?;
 /// ```
 ///
 /// # Error Handling
 /// The macro automatically:
 /// - Logs errors with context using the `tracing` crate
-/// - Maps `NotFound` errors to HTTP 404 status codes
-/// - Maps all other database errors to HTTP 500 status codes
-/// - Returns early from the function with the appropriate status code
+/// - Wraps diesel errors in ClaiError::Database for consistent error handling
+/// - Returns the error for the caller to handle appropriately
 ///
 /// # Usage Context
-/// This macro should only be used in HTTP handler functions that return
-/// `Result<T, axum::http::StatusCode>` as it performs early returns with status codes.
+/// This macro should be used in functions that return `crate::error::Result<T>`
+/// and the result should be handled with the `?` operator.
 #[macro_export]
 macro_rules! handle_db_operation {
     ($operation:literal, $db_op:expr) => {
         match $db_op {
             Ok(value) => value,
-            Err(diesel::result::Error::NotFound) => {
-                tracing::error!("Not found during {}", $operation);
-                return Err(axum::http::StatusCode::NOT_FOUND);
-            }
             Err(e) => {
                 tracing::error!("Database error during {}: {}", $operation, e);
-                return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+                return Err($crate::error::ClaiError::Database(e));
             }
         }
     };

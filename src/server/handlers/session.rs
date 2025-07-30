@@ -1,10 +1,10 @@
 use crate::db::ClaiDb;
+use crate::error::ClaiError;
 use crate::handle_db_operation;
 use crate::utils;
 use crate::utils::types::*;
 use axum::{
     extract::{Json, Path},
-    http::StatusCode,
     response::Json as JsonResponse,
 };
 use tracing::{info, warn};
@@ -12,7 +12,7 @@ use tracing::{info, warn};
 // CREATE operations
 pub async fn create_session(
     Json(payload): Json<CreateSessionRequest>,
-) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Creating new session with name: {}", payload.name);
 
     let mut db = ClaiDb::get();
@@ -39,7 +39,7 @@ pub async fn create_session(
 }
 
 // READ operations
-pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusCode> {
+pub async fn get_last_session() -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting last session");
 
     let mut db = ClaiDb::get();
@@ -67,7 +67,7 @@ pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, StatusC
 
 pub async fn get_session_by_name(
     Path(name): Path<String>,
-) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by name: {}", name);
 
     let mut db = ClaiDb::get();
@@ -90,7 +90,7 @@ pub async fn get_session_by_name(
     Ok(JsonResponse(response))
 }
 
-pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, StatusCode> {
+pub async fn list_sessions() -> std::result::Result<JsonResponse<Vec<SessionResponse>>, ClaiError> {
     info!("Listing named sessions");
 
     let mut db = ClaiDb::get();
@@ -113,7 +113,7 @@ pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, Statu
 
 pub async fn get_session_by_id(
     Path(session_id): Path<i32>,
-) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by ID: {}", session_id);
 
     let mut db = ClaiDb::get();
@@ -135,7 +135,7 @@ pub async fn get_session_by_id(
 pub async fn save_session(
     Path(session_id): Path<i32>,
     Json(payload): Json<SaveSessionRequest>,
-) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!(
         "Saving session {} with display name: {}",
         session_id, payload.display_name
@@ -162,7 +162,7 @@ pub async fn save_session(
 pub async fn set_role(
     Path(session_id): Path<i32>,
     Json(payload): Json<SetRoleRequest>,
-) -> Result<JsonResponse<SessionResponse>, StatusCode> {
+) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!(
         "Setting role for session {} to: {:?}",
         session_id, payload.role
@@ -187,7 +187,7 @@ pub async fn set_role(
 }
 
 // DELETE operations
-pub async fn delete_session(Path(name): Path<String>) -> Result<JsonResponse<()>, StatusCode> {
+pub async fn delete_session(Path(name): Path<String>) -> std::result::Result<JsonResponse<()>, ClaiError> {
     info!("Deleting session by name: {}", name);
 
     let mut db = ClaiDb::get();

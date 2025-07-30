@@ -36,15 +36,15 @@ export CLAI_SERVER_URL=http://localhost:3500  # Optional server URL
 
 ### Core Modules
 
-**`src/session_manager.rs`**: HTTP client managing session state with `Cell<Option<i32>>` for current session ID. All methods use internal session tracking - never pass session IDs as parameters.
+**`src/sessions.rs`**: HTTP client managing session state with `Cell<Option<i32>>` for current session ID. All methods use internal session tracking - never pass session IDs as parameters.
 
-**`src/commands.rs`**: Slash command processor handling 7 commands (`/clear`, `/new`, `/save`, `/delete`, `/list`, `/resume`, `/role`). Commands return `anyhow::Result<()>` and update session state internally.
+**`src/commands.rs`**: Slash command processor handling 7 commands (`/clear`, `/new`, `/save`, `/delete`, `/list`, `/resume`, `/role`). Commands handle errors internally and update session state.
 
 **`src/server/handlers/`**: REST API handlers for session CRUD operations and chat integration with Anthropic Claude API.
 
 **`src/db/lib.rs`**: Singleton database access using `OnceLock<Mutex<ClaiDb>>` pattern. Access via `ClaiDb::get()` returns `MutexGuard`.
 
-**`src/types.rs`**: Central location for all API types used by both client and server (`SessionResponse`, `ChatRequest`, etc.). Import with `use crate::types::*`.
+**`src/utils/types.rs`**: Central location for all API types used by both client and server (`SessionResponse`, `ChatRequest`, etc.). Import with `use crate::utils::types::*`.
 
 ### Key Patterns
 
@@ -54,7 +54,7 @@ export CLAI_SERVER_URL=http://localhost:3500  # Optional server URL
 
 **Type Organization**: All shared API types live in `src/types.rs`. Handler-specific types (like `ClaudeRequest`) remain in their respective handlers.
 
-**Error Handling**: Use `handle_db_operation!` macro for database operations. Server handlers return `Result<JsonResponse<T>, StatusCode>`.
+**Error Handling**: Use `handle_db_operation!` macro for database operations. Server handlers return `Result<JsonResponse<T>, ClaiError>`. Custom error types defined in `src/error.rs` with domain-specific variants.
 
 ## Database Schema
 
@@ -81,7 +81,7 @@ Custom terminal UI with:
 
 ## Code Conventions
 
-- Use `anyhow::Result` for error handling
-- Import types with `use crate::types::*`
+- Use `crate::error::Result<T>` for error handling with domain-specific `ClaiError` types
+- Import types with `use crate::utils::types::*`
 - Database operations via singleton pattern
 

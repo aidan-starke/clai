@@ -1,9 +1,9 @@
 use crate::db::ClaiDb;
+use crate::error::ClaiError;
 use crate::handle_db_operation;
 use crate::utils::types::*;
 use axum::{
     extract::{Json, Path},
-    http::StatusCode,
     response::Json as JsonResponse,
 };
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ struct ClaudeContent {
 pub async fn chat(
     Path(session_id): Path<i32>,
     Json(payload): Json<ChatRequest>,
-) -> Result<JsonResponse<ChatResponse>, StatusCode> {
+) -> std::result::Result<JsonResponse<ChatResponse>, ClaiError> {
     info!(
         "Chat request for session {} with message: {}",
         session_id, payload.message
@@ -46,7 +46,7 @@ pub async fn chat(
 
     let api_key = env::var("ANTHROPIC_API_KEY").map_err(|e| {
         error!("Failed to get ANTHROPIC_API_KEY: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        ClaiError::config("ANTHROPIC_API_KEY environment variable not set")
     })?;
 
     let client = reqwest::Client::new();
@@ -107,17 +107,17 @@ pub async fn chat(
         .await
         .map_err(|e| {
             error!("Failed to send request to Claude API: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            ClaiError::Network(e)
         })?;
 
     if !response.status().is_success() {
         error!("Claude API returned error status: {}", response.status());
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        return Err(ClaiError::server(format!("Claude API returned error status: {}", response.status())));
     }
 
     let claude_response: ClaudeResponse = response.json().await.map_err(|e| {
         error!("Failed to parse Claude API response: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        ClaiError::Network(e)
     })?;
 
     let text = claude_response

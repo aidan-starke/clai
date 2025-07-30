@@ -4,10 +4,11 @@ use axum::{
 };
 use tracing::info;
 
+use crate::error::Result;
 use crate::server::handlers;
 use crate::utils;
 
-pub async fn run_server(debug_mode: bool) -> anyhow::Result<()> {
+pub async fn run_server(debug_mode: bool) -> Result<()> {
     dotenv::dotenv().ok();
 
     if debug_mode {

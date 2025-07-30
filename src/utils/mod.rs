@@ -4,7 +4,7 @@ pub mod types;
 use console::{style, Key, Term};
 use std::{env, sync::OnceLock};
 
-use crate::{db::ClaiDb, server, write_line};
+use crate::{db::ClaiDb, error::Result, server, write_line};
 
 pub static TERM: OnceLock<Term> = OnceLock::new();
 
@@ -16,7 +16,7 @@ pub fn get_term() -> &'static Term {
     TERM.get_or_init(|| Term::stdout())
 }
 
-pub fn clear_screen() -> anyhow::Result<()> {
+pub fn clear_screen() -> Result<()> {
     get_term().clear_screen()?;
     Ok(())
 }
@@ -67,7 +67,7 @@ pub fn write_command_help() {
     write_line!("");
 }
 
-pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
+pub fn read_input_with_autocomplete() -> std::result::Result<String, std::io::Error> {
     let term = get_term();
     let mut input = String::new();
     let mut show_dropdown = false;
@@ -213,7 +213,7 @@ pub fn read_input_with_autocomplete() -> Result<String, std::io::Error> {
     }
 }
 
-pub async fn ensure_server_running() -> anyhow::Result<()> {
+pub async fn ensure_server_running() -> Result<()> {
     let server_url =
         env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
 
@@ -239,7 +239,7 @@ pub async fn ensure_server_running() -> anyhow::Result<()> {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
 
-    Err(anyhow::anyhow!("Server failed to start"))
+    Err(crate::error::ClaiError::server("Server failed to start"))
 }
 
 pub fn cleanup_old_sessions() {

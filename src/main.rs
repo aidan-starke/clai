@@ -7,6 +7,7 @@ use std::env;
 
 mod commands;
 mod db;
+mod error;
 mod server;
 mod sessions;
 mod utils;
@@ -20,7 +21,7 @@ struct Cli {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> error::Result<()> {
     let cli = Cli::parse();
 
     // Handle server mode

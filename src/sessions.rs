@@ -1,5 +1,5 @@
 use crate::utils::types::*;
-use anyhow::Result;
+use crate::error::{ClaiError, Result};
 use reqwest::Client;
 use std::cell::Cell;
 
@@ -28,7 +28,7 @@ impl SessionManager {
     fn require_current_session(&self) -> Result<i32> {
         self.current_session
             .get()
-            .ok_or_else(|| anyhow::anyhow!("No current session set"))
+            .ok_or_else(|| ClaiError::session("No current session set"))
     }
 
     // ===== Initialization =====
@@ -86,7 +86,7 @@ impl SessionManager {
             let session: SessionResponse = response.json().await?;
             Ok(session)
         } else {
-            anyhow::bail!("Failed to get session info: {}", response.status());
+            return Err(ClaiError::server(format!("Failed to get session info: {}", response.status())));
         }
     }
 
@@ -107,13 +107,13 @@ impl SessionManager {
             let session: SessionResponse = response.json().await?;
             Ok(session.id)
         } else if response.status() == reqwest::StatusCode::NOT_FOUND {
-            anyhow::bail!("Session '{}' not found", session_name);
+            return Err(ClaiError::session(format!("Session '{}' not found", session_name)));
         } else {
-            anyhow::bail!(
+            return Err(ClaiError::server(format!(
                 "Failed to get session '{}': {}",
                 session_name,
                 response.status()
-            );
+            )));
         }
     }
 
@@ -136,7 +136,7 @@ impl SessionManager {
             self.set_current_session(session.id);
             Ok(session.id)
         } else {
-            anyhow::bail!("Failed to create session: {}", response.status());
+            return Err(ClaiError::server(format!("Failed to create session: {}", response.status())));
         }
     }
 
@@ -155,7 +155,7 @@ impl SessionManager {
             .await?;
 
         if !response.status().is_success() {
-            anyhow::bail!("Failed to save session: {}", response.status());
+            return Err(ClaiError::server(format!("Failed to save session: {}", response.status())));
         }
 
         Ok(())
@@ -173,9 +173,9 @@ impl SessionManager {
             .await?;
 
         if response.status() == reqwest::StatusCode::NOT_FOUND {
-            anyhow::bail!("Session '{}' not found", session_name);
+            return Err(ClaiError::session(format!("Session '{}' not found", session_name)));
         } else if !response.status().is_success() {
-            anyhow::bail!("Failed to delete session: {}", response.status());
+            return Err(ClaiError::server(format!("Failed to delete session: {}", response.status())));
         }
 
         Ok(())
@@ -194,7 +194,7 @@ impl SessionManager {
             .await?;
 
         if !response.status().is_success() {
-            anyhow::bail!("Failed to set role: {}", response.status());
+            return Err(ClaiError::server(format!("Failed to set role: {}", response.status())));
         }
 
         Ok(())
@@ -213,7 +213,7 @@ impl SessionManager {
             .await?;
 
         if !response.status().is_success() {
-            anyhow::bail!("Failed to get sessions: {}", response.status());
+            return Err(ClaiError::server(format!("Failed to get sessions: {}", response.status())));
         }
 
         let sessions: Vec<SessionResponse> = response.json().await?;
@@ -240,7 +240,7 @@ impl SessionManager {
             let chat_response: ChatResponse = response.json().await?;
             Ok(chat_response.response)
         } else {
-            anyhow::bail!("Failed to send message: {}", response.status());
+            return Err(ClaiError::server(format!("Failed to send message: {}", response.status())));
         }
     }
 }

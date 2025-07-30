@@ -2,7 +2,17 @@ pub mod chat;
 pub mod session;
 
 use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use crate::error::ClaiError;
 
 pub async fn health() -> StatusCode {
     StatusCode::OK
+}
+
+// Convert ClaiError to axum Response for HTTP handlers
+impl IntoResponse for ClaiError {
+    fn into_response(self) -> Response {
+        let status_code: StatusCode = self.into();
+        status_code.into_response()
+    }
 }
