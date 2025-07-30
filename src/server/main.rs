@@ -6,7 +6,7 @@ use tracing::info;
 
 use crate::error::Result;
 use crate::server::handlers;
-use crate::utils;
+use crate::utils::{self, constants::{DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT}};
 
 pub async fn run_server(debug_mode: bool) -> Result<()> {
     dotenv::dotenv().ok();
@@ -35,8 +35,8 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
         .route("/sessions/{id}/role", put(handlers::session::set_role))
         .route("/sessions/{id}/chat", post(handlers::chat::chat));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3500").await?;
-    info!("Server running on http://0.0.0.0:3500");
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT)).await?;
+    info!("Server running on http://{}:{}", DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT);
 
     axum::serve(listener, app).await?;
 

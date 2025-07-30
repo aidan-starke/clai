@@ -1,3 +1,4 @@
+pub mod constants;
 pub mod macros;
 pub mod types;
 
@@ -7,10 +8,6 @@ use std::{env, sync::OnceLock};
 use crate::{db::ClaiDb, error::Result, server, write_line};
 
 pub static TERM: OnceLock<Term> = OnceLock::new();
-
-pub const COMMANDS: [&str; 7] = [
-    "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role",
-];
 
 pub fn get_term() -> &'static Term {
     TERM.get_or_init(|| Term::stdout())
@@ -70,7 +67,7 @@ pub fn write_command_help() {
 
 pub async fn ensure_server_running() -> Result<()> {
     let server_url =
-        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
+        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| constants::DEFAULT_SERVER_URL.to_string());
 
     // Quick health check
     if reqwest::get(&format!("{}/health", server_url))

@@ -1,4 +1,4 @@
-use crate::utils::{get_term, COMMANDS};
+use crate::utils::{constants::COMMANDS, get_term};
 use console::{style, Key, Term};
 
 pub struct InputReader {

@@ -34,7 +34,7 @@ async fn main() -> error::Result<()> {
     }
 
     let server_url =
-        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| "http://localhost:3500".to_string());
+        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| utils::constants::DEFAULT_SERVER_URL.to_string());
 
     let session_manager = SessionManager::new(server_url);
     let command_handler = CommandHandler::new(session_manager.clone());
