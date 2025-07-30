@@ -1,13 +1,13 @@
 use crate::error::{ClaiError, Result};
 use crate::utils::types::*;
 use reqwest::Client;
-use std::cell::Cell;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct SessionManager {
     client: Client,
     server_url: String,
-    current_session: Cell<Option<i32>>,
+    current_session: Arc<Mutex<Option<i32>>>,
 }
 
 impl SessionManager {
@@ -17,18 +17,21 @@ impl SessionManager {
         Self {
             server_url,
             client: Client::new(),
-            current_session: Cell::new(None),
+            current_session: Arc::new(Mutex::new(None)),
         }
     }
 
     pub fn set_current_session(&self, session_id: i32) {
-        self.current_session.set(Some(session_id));
+        *self.current_session.lock().unwrap() = Some(session_id);
     }
 
     fn require_current_session(&self) -> Result<i32> {
-        self.current_session
-            .get()
-            .ok_or_else(|| ClaiError::session("No current session set"))
+        let session_id = self
+            .current_session
+            .lock()
+            .unwrap()
+            .ok_or_else(|| ClaiError::session("No current session set"))?;
+        Ok(session_id)
     }
 
     // ===== Initialization =====
