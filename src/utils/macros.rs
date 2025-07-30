@@ -15,9 +15,9 @@ macro_rules! write_line {
     ($($arg:tt)*) => {
         {
             let text = format!($($arg)*);
-            $crate::utils::get_term()
-                .write_line(&text)
-                .unwrap();
+            if let Err(e) = $crate::utils::get_term().write_line(&text) {
+                eprintln!("Warning: Failed to write to terminal: {}", e);
+            }
         }
     };
 }

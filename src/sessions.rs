@@ -21,15 +21,19 @@ impl SessionManager {
         }
     }
 
-    pub fn set_current_session(&self, session_id: i32) {
-        *self.current_session.lock().unwrap() = Some(session_id);
+    pub fn set_current_session(&self, session_id: i32) -> Result<()> {
+        *self
+            .current_session
+            .lock()
+            .map_err(|_| ClaiError::session("Session state corrupted"))? = Some(session_id);
+        Ok(())
     }
 
     fn require_current_session(&self) -> Result<i32> {
         let session_id = self
             .current_session
             .lock()
-            .unwrap()
+            .map_err(|_| ClaiError::session("Session state corrupted"))?
             .ok_or_else(|| ClaiError::session("No current session set"))?;
         Ok(session_id)
     }
@@ -57,7 +61,7 @@ impl SessionManager {
             }
         };
 
-        self.set_current_session(session_id);
+        self.set_current_session(session_id)?;
 
         Ok((session_id, display_name))
     }
@@ -142,7 +146,7 @@ impl SessionManager {
 
         if response.status().is_success() {
             let session: SessionResponse = response.json().await?;
-            self.set_current_session(session.id);
+            self.set_current_session(session.id)?;
             Ok(session.id)
         } else {
             return Err(ClaiError::server(format!(

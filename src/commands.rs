@@ -141,7 +141,10 @@ impl CommandHandler {
 
         match self.session_manager.get_session_by_name(session_name).await {
             Ok(new_session_id) => {
-                self.session_manager.set_current_session(new_session_id);
+                if let Err(e) = self.session_manager.set_current_session(new_session_id) {
+                    utils::write_error(&format!("Failed to set current session: {}", e));
+                    return;
+                }
                 write_spaced!("🔄 Switched to session: '{}'", session_name);
                 utils::write_session_info(new_session_id, &session_name);
             }
