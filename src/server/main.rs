@@ -6,6 +6,7 @@ use tracing::info;
 
 use crate::{
     constants::{DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT},
+    db::ClaiDb,
     error::Result,
     server::handlers,
     utils,
@@ -19,6 +20,9 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
     }
 
     info!("clai server starting...");
+
+    // Initialize database and run migrations
+    ClaiDb::init()?;
 
     utils::cleanup_old_sessions();
 

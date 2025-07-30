@@ -72,9 +72,9 @@ macro_rules! write_spaced {
 ///
 /// # Examples
 /// ```
-/// let session = handle_db_operation!("get session", db.get_session_by_id(id))?;
-/// let message = handle_db_operation!("create message", db.create_message(session_id, "user", content))?;
-/// let sessions = handle_db_operation!("list sessions", db.list_named_sessions())?;
+/// let session = handle_db_operation!("get session", ClaiDb::get_session_by_id(id))?;
+/// let message = handle_db_operation!("create message", ClaiDb::create_message(session_id, "user", content))?;
+/// let sessions = handle_db_operation!("list sessions", ClaiDb::list_named_sessions())?;
 /// ```
 ///
 /// # Error Handling
@@ -92,8 +92,13 @@ macro_rules! handle_db_operation {
         match $db_op {
             Ok(value) => value,
             Err(e) => {
-                tracing::error!("Database error during {}: {}", $operation, e);
-                return Err($crate::error::ClaiError::Database(e));
+                // Log the operation context if it's a database error
+                if let $crate::error::ClaiError::Database(ref diesel_err) = e {
+                    tracing::error!("Database error during {}: {}", $operation, diesel_err);
+                } else {
+                    tracing::error!("Error during {}: {}", $operation, e);
+                }
+                return Err(e);
             }
         }
     };

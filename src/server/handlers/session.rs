@@ -25,10 +25,9 @@ pub async fn create_session(
 ) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Creating new session with name: {}", payload.name);
 
-    let mut db = ClaiDb::get();
     let session = handle_db_operation!(
         "create session",
-        db.create_session(&payload.name, payload.display_name.as_deref())
+        ClaiDb::create_session(&payload.name, payload.display_name.as_deref())
     );
 
     info!(
@@ -45,11 +44,10 @@ pub async fn create_session(
 pub async fn get_last_session() -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting last session");
 
-    let mut db = ClaiDb::get();
-    let session = handle_db_operation!("get last session", db.get_last_session());
+    let session = handle_db_operation!("get last session", ClaiDb::get_last_session());
 
     // Update timestamp to mark as recently accessed
-    if let Err(e) = db.update_session_timestamp(session.id) {
+    if let Err(e) = ClaiDb::update_session_timestamp(session.id) {
         warn!("Failed to update session timestamp: {}", e);
     }
 
@@ -66,13 +64,12 @@ pub async fn get_session_by_name(
 ) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by name: {}", name);
 
-    let mut db = ClaiDb::get();
-    let session = handle_db_operation!("get session by name", db.get_session_by_name(&name));
+    let session = handle_db_operation!("get session by name", ClaiDb::get_session_by_name(&name));
 
     info!("Found session: {} (ID: {})", name, session.id);
 
     // Update timestamp to mark as recently accessed
-    if let Err(e) = db.update_session_timestamp(session.id) {
+    if let Err(e) = ClaiDb::update_session_timestamp(session.id) {
         warn!("Failed to update session timestamp: {}", e);
     }
 
@@ -82,8 +79,7 @@ pub async fn get_session_by_name(
 pub async fn list_sessions() -> std::result::Result<JsonResponse<Vec<SessionResponse>>, ClaiError> {
     info!("Listing named sessions");
 
-    let mut db = ClaiDb::get();
-    let sessions = handle_db_operation!("list sessions", db.list_named_sessions());
+    let sessions = handle_db_operation!("list sessions", ClaiDb::list_named_sessions());
 
     let response: Vec<SessionResponse> = sessions
         .into_iter()
@@ -106,8 +102,7 @@ pub async fn get_session_by_id(
 ) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by ID: {}", session_id);
 
-    let mut db = ClaiDb::get();
-    let session = handle_db_operation!("get session by id", db.get_session_by_id(session_id));
+    let session = handle_db_operation!("get session by id", ClaiDb::get_session_by_id(session_id));
 
     info!("Found session: ID {}, name: {}", session_id, session.name);
 
@@ -124,10 +119,9 @@ pub async fn save_session(
         session_id, payload.display_name
     );
 
-    let mut db = ClaiDb::get();
     let session = handle_db_operation!(
         "save session",
-        db.update_session_display_name(session_id, &payload.display_name)
+        ClaiDb::update_session_display_name(session_id, &payload.display_name)
     );
 
     info!("Saved session {} as '{}'", session_id, payload.display_name);
@@ -144,10 +138,9 @@ pub async fn set_role(
         session_id, payload.role
     );
 
-    let mut db = ClaiDb::get();
     let session = handle_db_operation!(
         "set session role",
-        db.update_session_role(session_id, payload.role.as_deref())
+        ClaiDb::update_session_role(session_id, payload.role.as_deref())
     );
 
     info!("Updated session {} role to: {:?}", session_id, payload.role);
@@ -164,10 +157,9 @@ pub async fn set_model(
         session_id, payload.model
     );
 
-    let mut db = ClaiDb::get();
     let session = handle_db_operation!(
         "set session model",
-        db.update_session_model(session_id, &payload.model)
+        ClaiDb::update_session_model(session_id, &payload.model)
     );
 
     info!("Updated session {} model to: {}", session_id, payload.model);
@@ -181,8 +173,7 @@ pub async fn delete_session(
 ) -> std::result::Result<JsonResponse<()>, ClaiError> {
     info!("Deleting session by name: {}", name);
 
-    let mut db = ClaiDb::get();
-    handle_db_operation!("delete session", db.delete_session_by_name(&name));
+    handle_db_operation!("delete session", ClaiDb::delete_session_by_name(&name));
 
     info!("Successfully deleted session '{}'", name);
 

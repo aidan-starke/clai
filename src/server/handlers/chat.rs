@@ -54,36 +54,29 @@ pub async fn chat(
 
     let client = reqwest::Client::new();
 
-    let (session, messages) = {
-        let mut db = ClaiDb::get();
+    let session = handle_db_operation!("get session info", ClaiDb::get_session_by_id(session_id));
 
-        let session = handle_db_operation!("get session info", db.get_session_by_id(session_id));
-
-        let messages = match db.get_session_messages(session_id) {
-            Ok(msgs) => {
-                let mut claude_messages = Vec::new();
-                for msg in msgs {
-                    claude_messages.push(ClaudeMessage {
-                        role: msg.role,
-                        content: msg.content,
-                    });
-                }
-                claude_messages
+    let mut messages = match ClaiDb::get_session_messages(session_id) {
+        Ok(msgs) => {
+            let mut claude_messages = Vec::new();
+            for msg in msgs {
+                claude_messages.push(ClaudeMessage {
+                    role: msg.role,
+                    content: msg.content,
+                });
             }
-            Err(e) => {
-                error!("Failed to get session messages: {}", e);
-                Vec::new()
-            }
-        };
-
-        let mut messages = messages;
-        messages.push(ClaudeMessage {
-            role: "user".to_string(),
-            content: payload.message.clone(),
-        });
-
-        (session, messages)
+            claude_messages
+        }
+        Err(e) => {
+            error!("Failed to get session messages: {}", e);
+            Vec::new()
+        }
     };
+
+    messages.push(ClaudeMessage {
+        role: "user".to_string(),
+        content: payload.message.clone(),
+    });
 
     // Prepare system message if role is set
     let system_message = session.role.as_ref().map(|role| {
@@ -137,14 +130,13 @@ pub async fn chat(
         .collect::<Vec<_>>()
         .join("");
 
-    let mut db = ClaiDb::get();
     handle_db_operation!(
         "store user message",
-        db.create_message(session_id, "user", &payload.message)
+        ClaiDb::create_message(session_id, "user", &payload.message)
     );
     handle_db_operation!(
         "store assistant message",
-        db.create_message(session_id, "assistant", &text)
+        ClaiDb::create_message(session_id, "assistant", &text)
     );
 
     info!(
