@@ -7,6 +7,8 @@ pub struct InputReader {
     show_dropdown: bool,
     selected_index: usize,
     dropdown_lines: usize,
+    history: Vec<String>,
+    history_index: Option<usize>,
 }
 
 impl InputReader {
@@ -17,6 +19,8 @@ impl InputReader {
             show_dropdown: false,
             selected_index: 0,
             dropdown_lines: 0,
+            history: Vec::new(),
+            history_index: None,
         }
     }
 
@@ -25,6 +29,7 @@ impl InputReader {
         self.show_dropdown = false;
         self.selected_index = 0;
         self.dropdown_lines = 0;
+        self.history_index = None;
 
         loop {
             // Clear any existing dropdown
@@ -44,6 +49,11 @@ impl InputReader {
             match self.handle_key(key)? {
                 Some(result) => {
                     self.finalize_input(&result)?;
+                    // Add to history if it's not empty and not a duplicate of the last entry
+                    if !result.trim().is_empty() 
+                        && (self.history.is_empty() || self.history.last() != Some(&result)) {
+                        self.history.push(result.clone());
+                    }
                     return Ok(result);
                 }
                 None => continue,
@@ -76,6 +86,18 @@ impl InputReader {
                     if !filtered_commands.is_empty() {
                         self.selected_index = (self.selected_index + 1) % filtered_commands.len();
                     }
+                } else {
+                    // Navigate forward in history (toward more recent)
+                    if let Some(current_index) = self.history_index {
+                        if current_index < self.history.len() - 1 {
+                            self.history_index = Some(current_index + 1);
+                            self.input = self.history[current_index + 1].clone();
+                        } else {
+                            // At newest history entry, go back to empty input
+                            self.history_index = None;
+                            self.input.clear();
+                        }
+                    }
                 }
                 Ok(None)
             }
@@ -89,6 +111,25 @@ impl InputReader {
                             self.selected_index - 1
                         };
                     }
+                } else {
+                    // Navigate backward in history (toward older)
+                    if self.history.is_empty() {
+                        return Ok(None);
+                    }
+                    
+                    match self.history_index {
+                        None => {
+                            // Start from most recent
+                            self.history_index = Some(self.history.len() - 1);
+                            self.input = self.history[self.history.len() - 1].clone();
+                        }
+                        Some(current_index) => {
+                            if current_index > 0 {
+                                self.history_index = Some(current_index - 1);
+                                self.input = self.history[current_index - 1].clone();
+                            }
+                        }
+                    }
                 }
                 Ok(None)
             }
@@ -99,6 +140,8 @@ impl InputReader {
                         self.show_dropdown = false;
                         self.selected_index = 0;
                     }
+                    // Reset history position when user starts editing
+                    self.history_index = None;
                 }
                 Ok(None)
             }
@@ -110,6 +153,8 @@ impl InputReader {
                 } else {
                     self.show_dropdown = false;
                 }
+                // Reset history position when user starts typing
+                self.history_index = None;
                 Ok(None)
             }
             _ => Ok(None),
@@ -132,9 +177,6 @@ impl InputReader {
 
     fn render(&self) -> std::result::Result<(), std::io::Error> {
         self.term.clear_line()?;
-        if self.input.is_empty() {
-            self.term.write_line("")?;
-        }
         self.term
             .write_str(&format!("{}: {}", style("You").green(), self.input))?;
         Ok(())
