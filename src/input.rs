@@ -50,8 +50,9 @@ impl InputReader {
                 Some(result) => {
                     self.finalize_input(&result)?;
                     // Add to history if it's not empty and not a duplicate of the last entry
-                    if !result.trim().is_empty() 
-                        && (self.history.is_empty() || self.history.last() != Some(&result)) {
+                    if !result.trim().is_empty()
+                        && (self.history.is_empty() || self.history.last() != Some(&result))
+                    {
                         self.history.push(result.clone());
                     }
                     return Ok(result);
@@ -116,7 +117,7 @@ impl InputReader {
                     if self.history.is_empty() {
                         return Ok(None);
                     }
-                    
+
                     match self.history_index {
                         None => {
                             // Start from most recent
