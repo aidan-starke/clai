@@ -1,8 +1,4 @@
-use crate::db::ClaiDb;
-use crate::error::ClaiError;
-use crate::handle_db_operation;
-use crate::utils;
-use crate::utils::types::*;
+use crate::{db::ClaiDb, error::ClaiError, handle_db_operation, types::*, utils};
 use axum::{
     extract::{Json, Path},
     response::Json as JsonResponse,

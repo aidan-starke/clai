@@ -44,7 +44,7 @@ export CLAI_SERVER_URL=http://localhost:3500  # Optional server URL
 
 **`src/db/lib.rs`**: Singleton database access using `OnceLock<Mutex<ClaiDb>>` pattern. Access via `ClaiDb::get()` returns `MutexGuard`.
 
-**`src/utils/types.rs`**: Central location for all API types used by both client and server (`SessionResponse`, `ChatRequest`, etc.). Import with `use crate::utils::types::*`.
+**`src/utils/types.rs`**: Central location for all API types used by both client and server (`SessionResponse`, `ChatRequest`, etc.). Import with `use crate::types::*`.
 
 ### Key Patterns
 
@@ -82,6 +82,6 @@ Custom terminal UI with:
 ## Code Conventions
 
 - Use `crate::error::Result<T>` for error handling with domain-specific `ClaiError` types
-- Import types with `use crate::utils::types::*`
+- Import types with `use crate::types::*`
 - Database operations via singleton pattern
 

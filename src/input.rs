@@ -1,4 +1,4 @@
-use crate::utils::{constants::COMMANDS, get_term};
+use crate::{constants::COMMANDS, utils};
 use console::{style, Key, Term};
 
 pub struct InputReader {
@@ -14,7 +14,7 @@ pub struct InputReader {
 impl InputReader {
     pub fn new() -> Self {
         Self {
-            term: get_term(),
+            term: utils::get_term(),
             input: String::new(),
             show_dropdown: false,
             selected_index: 0,

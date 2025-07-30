@@ -1,5 +1,4 @@
-use crate::error::ClaiError;
-use crate::utils::types::*;
+use crate::{error::ClaiError, types::*};
 use axum::response::Json as JsonResponse;
 use serde::Deserialize;
 use std::env;

@@ -4,11 +4,11 @@ use axum::{
 };
 use tracing::info;
 
-use crate::error::Result;
-use crate::server::handlers;
-use crate::utils::{
-    self,
+use crate::{
     constants::{DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT},
+    error::Result,
+    server::handlers,
+    utils,
 };
 
 pub async fn run_server(debug_mode: bool) -> Result<()> {

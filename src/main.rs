@@ -8,11 +8,14 @@ use std::env;
 
 mod commands;
 mod db;
-mod error;
 mod input;
 mod server;
 mod sessions;
 mod utils;
+
+pub use utils::constants;
+pub use utils::error;
+pub use utils::types;
 
 #[derive(Parser)]
 #[command(name = "clai")]

@@ -1,10 +1,7 @@
 use crate::{
+    constants::{COMMANDS, DEFAULT_MODEL},
     sessions::SessionManager,
-    utils::{
-        self,
-        constants::{COMMANDS, DEFAULT_MODEL},
-    },
-    write_line, write_spaced,
+    utils, write_line, write_spaced,
 };
 
 pub struct CommandHandler {
