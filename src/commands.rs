@@ -44,9 +44,7 @@ impl CommandHandler {
     // ===== Session Lifecycle Management =====
 
     fn handle_clear(&self) {
-        if let Err(e) = utils::clear_screen() {
-            utils::write_error(&format!("Failed to clear screen: {}", e));
-        }
+        let _ = utils::clear_screen();
     }
 
     async fn handle_new(&self, cmd: &str) {
