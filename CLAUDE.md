@@ -21,9 +21,10 @@ diesel setup                 # Initialize database from scratch
 diesel migration generate NAME  # Create new migration
 
 # Environment setup
-export ANTHROPIC_API_KEY=sk-...  # Required for Claude AI integration
-export DATABASE_URL=clai.db      # Optional (defaults to clai.db)
-export CLAI_SERVER_URL=http://localhost:3500  # Optional server URL
+# Create a .env file in the project root with:
+# ANTHROPIC_API_KEY=sk-...  # Required for Claude AI integration
+# DATABASE_URL=clai.db      # Optional (defaults to clai.db)
+# CLAI_SERVER_URL=http://localhost:3500  # Optional server URL
 ```
 
 ## Architecture Overview

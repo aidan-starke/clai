@@ -1,10 +1,11 @@
+pub mod config;
 pub mod constants;
 pub mod error;
 pub mod macros;
 pub mod types;
 
 use console::{style, Term};
-use std::{env, sync::OnceLock};
+use std::sync::OnceLock;
 
 use crate::{db::ClaiDb, error::Result, server, write_line};
 
@@ -70,8 +71,8 @@ pub fn write_command_help() {
 }
 
 pub async fn ensure_server_running() -> Result<()> {
-    let server_url =
-        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| constants::DEFAULT_SERVER_URL.to_string());
+    let config = crate::config::Config::load()?;
+    let server_url = &config.clai_server_url;
 
     // Quick health check
     if reqwest::get(&format!("{}/health", server_url))

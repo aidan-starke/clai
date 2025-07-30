@@ -10,7 +10,6 @@ use axum::{
     response::Json as JsonResponse,
 };
 use serde::{Deserialize, Serialize};
-use std::env;
 use tracing::{error, info};
 
 #[derive(Serialize)]
@@ -47,9 +46,9 @@ pub async fn chat(
         session_id, payload.message
     );
 
-    let api_key = env::var("ANTHROPIC_API_KEY").map_err(|e| {
-        error!("Failed to get ANTHROPIC_API_KEY: {}", e);
-        ClaiError::config("ANTHROPIC_API_KEY environment variable not set")
+    let config = crate::config::Config::load().map_err(|e| {
+        error!("Failed to load configuration: {}", e);
+        e
     })?;
 
     let client = reqwest::Client::new();
@@ -99,7 +98,7 @@ pub async fn chat(
 
     let response = client
         .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", api_key)
+        .header("x-api-key", &config.anthropic_api_key)
         .header("anthropic-version", "2023-06-01")
         .header("content-type", "application/json")
         .json(&claude_request)

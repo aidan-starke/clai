@@ -4,7 +4,6 @@ use commands::CommandHandler;
 use console::style;
 use input::InputReader;
 use sessions::SessionManager;
-use std::env;
 
 mod commands;
 mod db;
@@ -13,6 +12,7 @@ mod server;
 mod sessions;
 mod utils;
 
+pub use utils::config;
 pub use utils::constants;
 pub use utils::error;
 pub use utils::types;
@@ -36,10 +36,9 @@ async fn main() -> error::Result<()> {
         utils::ensure_server_running().await?;
     }
 
-    let server_url = env::var("CLAI_SERVER_URL")
-        .unwrap_or_else(|_| utils::constants::DEFAULT_SERVER_URL.to_string());
+    let config = config::Config::load()?;
 
-    let session_manager = SessionManager::new(server_url);
+    let session_manager = SessionManager::new(config.clai_server_url);
     let (session_id, session_name) = session_manager.init().await?;
 
     let command_handler = CommandHandler::new(session_manager.clone());

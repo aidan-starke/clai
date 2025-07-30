@@ -1,7 +1,6 @@
 use crate::{error::ClaiError, types::*};
 use axum::response::Json as JsonResponse;
 use serde::Deserialize;
-use std::env;
 use tracing::{error, info};
 
 #[derive(Deserialize)]
@@ -19,16 +18,16 @@ struct AnthropicModel {
 pub async fn get_models() -> std::result::Result<JsonResponse<Vec<ClaudeModel>>, ClaiError> {
     info!("Fetching available models from Claude API");
 
-    let api_key = env::var("ANTHROPIC_API_KEY").map_err(|e| {
-        error!("Failed to get ANTHROPIC_API_KEY: {}", e);
-        ClaiError::config("ANTHROPIC_API_KEY environment variable not set")
+    let config = crate::config::Config::load().map_err(|e| {
+        error!("Failed to load configuration: {}", e);
+        e
     })?;
 
     let client = reqwest::Client::new();
 
     let response = client
         .get("https://api.anthropic.com/v1/models")
-        .header("x-api-key", api_key)
+        .header("x-api-key", &config.anthropic_api_key)
         .header("anthropic-version", "2023-06-01")
         .send()
         .await

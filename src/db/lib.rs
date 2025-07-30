@@ -19,9 +19,13 @@ impl ClaiDb {
     }
 
     fn establish_connection() -> Result<SqliteConnection> {
-        let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "clai.db".to_string());
-        SqliteConnection::establish(&database_url)
-            .map_err(|e| ClaiError::server(format!("Failed to connect to {}: {}", database_url, e)))
+        let config = crate::config::Config::load()?;
+        SqliteConnection::establish(&config.database_url).map_err(|e| {
+            ClaiError::server(format!(
+                "Failed to connect to {}: {}",
+                config.database_url, e
+            ))
+        })
     }
 
     fn with_connection<F, R>(f: F) -> Result<R>
