@@ -72,7 +72,7 @@ async fn main() -> anyhow::Result<()> {
                 if message.starts_with('/') {
                     write_spaced!("You entered: {}", style(message).yellow().bold());
 
-                    command_handler.handle_command(message).await?;
+                    command_handler.handle_command(message).await;
                     continue;
                 }
 

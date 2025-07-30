@@ -11,10 +11,12 @@ pub struct SessionManager {
 }
 
 impl SessionManager {
+    // ===== Construction & State Management =====
+
     pub fn new(server_url: String) -> Self {
         Self {
-            client: Client::new(),
             server_url,
+            client: Client::new(),
             current_session: Cell::new(None),
         }
     }
@@ -23,11 +25,13 @@ impl SessionManager {
         self.current_session.set(Some(session_id));
     }
 
-    pub fn require_current_session(&self) -> Result<i32> {
+    fn require_current_session(&self) -> Result<i32> {
         self.current_session
             .get()
             .ok_or_else(|| anyhow::anyhow!("No current session set"))
     }
+
+    // ===== Initialization =====
 
     pub async fn init(&self) -> Result<(i32, String)> {
         let (session_id, display_name) = match self.get_last_session().await {
@@ -55,6 +59,39 @@ impl SessionManager {
         Ok((session_id, display_name))
     }
 
+    async fn get_last_session(&self) -> Result<i32> {
+        let response = self
+            .client
+            .get(&format!("{}/sessions/last", self.server_url))
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let session: SessionResponse = response.json().await?;
+            Ok(session.id)
+        } else {
+            // No last session found, create a new one
+            self.create_new_session().await
+        }
+    }
+
+    async fn get_session_info_by_id(&self, session_id: i32) -> Result<SessionResponse> {
+        let response = self
+            .client
+            .get(&format!("{}/sessions/{}", self.server_url, session_id))
+            .send()
+            .await?;
+
+        if response.status().is_success() {
+            let session: SessionResponse = response.json().await?;
+            Ok(session)
+        } else {
+            anyhow::bail!("Failed to get session info: {}", response.status());
+        }
+    }
+
+    // ===== Session CRUD Operations =====
+
     pub async fn get_session_by_name(&self, session_name: &str) -> Result<i32> {
         let response = self
             .client
@@ -68,7 +105,6 @@ impl SessionManager {
 
         if response.status().is_success() {
             let session: SessionResponse = response.json().await?;
-            println!("Resuming session: {} (ID: {})", session_name, session.id);
             Ok(session.id)
         } else if response.status() == reqwest::StatusCode::NOT_FOUND {
             anyhow::bail!("Session '{}' not found", session_name);
@@ -78,24 +114,6 @@ impl SessionManager {
                 session_name,
                 response.status()
             );
-        }
-    }
-
-    pub async fn get_last_session(&self) -> Result<i32> {
-        let response = self
-            .client
-            .get(&format!("{}/sessions/last", self.server_url))
-            .send()
-            .await?;
-
-        if response.status().is_success() {
-            let session: SessionResponse = response.json().await?;
-            let display_name = session.display_name.as_deref().unwrap_or(&session.name);
-            println!("Resuming session: {} (ID: {})", display_name, session.id);
-            Ok(session.id)
-        } else {
-            // No last session found, create a new one
-            self.create_new_session().await
         }
     }
 
@@ -115,7 +133,6 @@ impl SessionManager {
 
         if response.status().is_success() {
             let session: SessionResponse = response.json().await?;
-            println!("Created new session: {} (ID: {})", session.name, session.id);
             self.set_current_session(session.id);
             Ok(session.id)
         } else {
@@ -137,9 +154,7 @@ impl SessionManager {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            println!("✅ Session saved as '{}'", display_name);
-        } else {
+        if !response.status().is_success() {
             anyhow::bail!("Failed to save session: {}", response.status());
         }
 
@@ -157,11 +172,9 @@ impl SessionManager {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            println!("🗑️ Session '{}' deleted successfully", session_name);
-        } else if response.status() == reqwest::StatusCode::NOT_FOUND {
+        if response.status() == reqwest::StatusCode::NOT_FOUND {
             anyhow::bail!("Session '{}' not found", session_name);
-        } else {
+        } else if !response.status().is_success() {
             anyhow::bail!("Failed to delete session: {}", response.status());
         }
 
@@ -180,9 +193,7 @@ impl SessionManager {
             .send()
             .await?;
 
-        if response.status().is_success() {
-            // Success message is handled by the caller
-        } else {
+        if !response.status().is_success() {
             anyhow::bail!("Failed to set role: {}", response.status());
         }
 
@@ -194,22 +205,7 @@ impl SessionManager {
         self.get_session_info_by_id(session_id).await
     }
 
-    pub async fn get_session_info_by_id(&self, session_id: i32) -> Result<SessionResponse> {
-        let response = self
-            .client
-            .get(&format!("{}/sessions/{}", self.server_url, session_id))
-            .send()
-            .await?;
-
-        if response.status().is_success() {
-            let session: SessionResponse = response.json().await?;
-            Ok(session)
-        } else {
-            anyhow::bail!("Failed to get session info: {}", response.status());
-        }
-    }
-
-    pub async fn list_sessions(&self) -> Result<()> {
+    pub async fn get_sessions(&self) -> Result<Vec<SessionResponse>> {
         let response = self
             .client
             .get(&format!("{}/sessions", self.server_url))
@@ -217,30 +213,14 @@ impl SessionManager {
             .await?;
 
         if !response.status().is_success() {
-            anyhow::bail!("Failed to list sessions: {}", response.status());
+            anyhow::bail!("Failed to get sessions: {}", response.status());
         }
 
         let sessions: Vec<SessionResponse> = response.json().await?;
-
-        if sessions.is_empty() {
-            println!("No saved sessions found.");
-            return Ok(());
-        }
-
-        println!("📚 Saved Sessions:");
-        println!("─────────────────");
-        for session in sessions {
-            if let Some(display_name) = &session.display_name {
-                if let Some(role) = &session.role {
-                    println!("• {} (ID: {}) 🎭 {}", display_name, session.id, role);
-                } else {
-                    println!("• {} (ID: {})", display_name, session.id);
-                }
-            }
-        }
-
-        Ok(())
+        Ok(sessions)
     }
+
+    // ===== Chat Operations =====
 
     pub async fn send_message(&self, message: &str) -> Result<String> {
         let session_id = self.require_current_session()?;
