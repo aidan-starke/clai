@@ -71,16 +71,13 @@ impl CommandHandler {
                 Ok(_) => {
                     write_spaced!("✨ Created and saved new session: '{}'", session_name);
                     utils::write_session_info(new_session_id, &session_name);
-                    ()
                 }
                 Err(e) => {
                     utils::write_error(&format!("Failed to save new session: {}", e));
-                    ()
                 }
             },
             Err(e) => {
                 utils::write_error(&format!("Failed to create new session: {}", e));
-                ()
             }
         }
     }
@@ -95,11 +92,9 @@ impl CommandHandler {
         match self.session_manager.save_session(session_name).await {
             Ok(_) => {
                 write_spaced!("✅ Session saved as '{}'", session_name);
-                ()
             }
             Err(e) => {
                 utils::write_error(&format!("Failed to save session: {}", e));
-                ()
             }
         }
     }
@@ -130,11 +125,9 @@ impl CommandHandler {
         match self.session_manager.delete_session(session_name).await {
             Ok(_) => {
                 write_spaced!("🗑️ Session '{}' deleted successfully", session_name);
-                ()
             }
             Err(e) => {
                 utils::write_error(&format!("Failed to delete session: {}", e));
-                ()
             }
         }
     }
@@ -151,11 +144,9 @@ impl CommandHandler {
                 self.session_manager.set_current_session(new_session_id);
                 write_spaced!("🔄 Switched to session: '{}'", session_name);
                 utils::write_session_info(new_session_id, &session_name);
-                ()
             }
             Err(e) => {
                 utils::write_error(&format!("Failed to resume session: {}", e));
-                ()
             }
         }
     }
@@ -183,11 +174,9 @@ impl CommandHandler {
                     }
                 }
                 write_line!("");
-                ()
             }
             Err(e) => {
                 utils::write_error(&format!("Failed to list sessions: {}", e));
-                ()
             }
         }
     }
@@ -219,11 +208,9 @@ impl CommandHandler {
         match self.session_manager.set_role(Some(role.to_string())).await {
             Ok(_) => {
                 write_spaced!("🎭 Role set to: '{}'", role);
-                ()
             }
             Err(e) => {
                 utils::write_error(&format!("Failed to set role: {}", e));
-                ()
             }
         }
     }
