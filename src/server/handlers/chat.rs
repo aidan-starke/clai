@@ -1,3 +1,4 @@
+use crate::server::HttpUtils;
 use crate::{
     constants::{CLAUDE_MAX_TOKENS, DEFAULT_MODEL},
     db::ClaiDb,
@@ -46,10 +47,7 @@ pub async fn chat(
         session_id, payload.message
     );
 
-    let config = crate::config::Config::load().map_err(|e| {
-        error!("Failed to load configuration: {}", e);
-        e
-    })?;
+    let config = HttpUtils::load_config()?;
 
     let client = reqwest::Client::new();
 
@@ -104,23 +102,14 @@ pub async fn chat(
         .json(&claude_request)
         .send()
         .await
-        .map_err(|e| {
-            error!("Failed to send request to Claude API: {}", e);
-            ClaiError::Network(e)
-        })?;
+        .map_err(HttpUtils::network_error("Claude API"))?;
 
-    if !response.status().is_success() {
-        error!("Claude API returned error status: {}", response.status());
-        return Err(ClaiError::server(format!(
-            "Claude API returned error status: {}",
-            response.status()
-        )));
-    }
+    HttpUtils::check_response_status("Claude API", &response)?;
 
-    let claude_response: ClaudeResponse = response.json().await.map_err(|e| {
-        error!("Failed to parse Claude API response: {}", e);
-        ClaiError::Network(e)
-    })?;
+    let claude_response: ClaudeResponse = response
+        .json()
+        .await
+        .map_err(HttpUtils::json_parse_error("Claude API"))?;
 
     let text = claude_response
         .content

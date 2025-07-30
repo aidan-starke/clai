@@ -85,7 +85,6 @@ macro_rules! write_spaced {
 ///
 /// # Usage Context
 /// This macro should be used in functions that return `crate::error::Result<T>`
-/// and the result should be handled with the `?` operator.
 #[macro_export]
 macro_rules! handle_db_operation {
     ($operation:literal, $db_op:expr) => {

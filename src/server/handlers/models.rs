@@ -1,7 +1,8 @@
+use crate::server::HttpUtils;
 use crate::{error::ClaiError, types::*};
 use axum::response::Json as JsonResponse;
 use serde::Deserialize;
-use tracing::{error, info};
+use tracing::info;
 
 #[derive(Deserialize)]
 struct AnthropicModelsResponse {
@@ -18,10 +19,7 @@ struct AnthropicModel {
 pub async fn get_models() -> std::result::Result<JsonResponse<Vec<ClaudeModel>>, ClaiError> {
     info!("Fetching available models from Claude API");
 
-    let config = crate::config::Config::load().map_err(|e| {
-        error!("Failed to load configuration: {}", e);
-        e
-    })?;
+    let config = HttpUtils::load_config()?;
 
     let client = reqwest::Client::new();
 
@@ -31,23 +29,14 @@ pub async fn get_models() -> std::result::Result<JsonResponse<Vec<ClaudeModel>>,
         .header("anthropic-version", "2023-06-01")
         .send()
         .await
-        .map_err(|e| {
-            error!("Failed to fetch models from Claude API: {}", e);
-            ClaiError::Network(e)
-        })?;
+        .map_err(HttpUtils::network_error("Claude API"))?;
 
-    if !response.status().is_success() {
-        error!("Claude API returned error status: {}", response.status());
-        return Err(ClaiError::server(format!(
-            "Claude API returned error status: {}",
-            response.status()
-        )));
-    }
+    HttpUtils::check_response_status("Claude API", &response)?;
 
-    let anthropic_response: AnthropicModelsResponse = response.json().await.map_err(|e| {
-        error!("Failed to parse Claude API models response: {}", e);
-        ClaiError::Network(e)
-    })?;
+    let anthropic_response: AnthropicModelsResponse = response
+        .json()
+        .await
+        .map_err(HttpUtils::json_parse_error("Claude API models"))?;
 
     let models: Vec<ClaudeModel> = anthropic_response
         .data
