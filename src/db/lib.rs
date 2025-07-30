@@ -1,9 +1,14 @@
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-use crate::db::models::{Message, NewMessage, NewSession, Session};
-use crate::db::schema::{messages, sessions};
-use crate::error::{ClaiError, Result};
+use crate::{
+    config::Config,
+    db::{
+        models::{Message, NewMessage, NewSession, Session},
+        schema::{messages, sessions},
+    },
+    error::{ClaiError, Result},
+};
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
@@ -19,7 +24,7 @@ impl ClaiDb {
     }
 
     fn establish_connection() -> Result<SqliteConnection> {
-        let config = crate::config::Config::load()?;
+        let config = Config::load()?;
         SqliteConnection::establish(&config.database_url).map_err(|e| {
             ClaiError::server(format!(
                 "Failed to connect to {}: {}",

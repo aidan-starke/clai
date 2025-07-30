@@ -7,7 +7,12 @@ pub mod types;
 use console::{style, Term};
 use std::sync::OnceLock;
 
-use crate::{db::ClaiDb, error::Result, server, write_line};
+use crate::{
+    config::Config,
+    db::ClaiDb,
+    error::{ClaiError, Result},
+    server, write_line,
+};
 
 pub static TERM: OnceLock<Term> = OnceLock::new();
 
@@ -71,7 +76,7 @@ pub fn write_command_help() {
 }
 
 pub async fn ensure_server_running() -> Result<()> {
-    let config = crate::config::Config::load()?;
+    let config = Config::load()?;
     let server_url = &config.clai_server_url;
 
     // Quick health check
@@ -96,7 +101,7 @@ pub async fn ensure_server_running() -> Result<()> {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     }
 
-    Err(crate::error::ClaiError::server("Server failed to start"))
+    Err(ClaiError::server("Server failed to start"))
 }
 
 pub fn cleanup_old_sessions() {

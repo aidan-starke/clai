@@ -1,5 +1,7 @@
-use crate::error::{ClaiError, Result};
-use crate::types::*;
+use crate::{
+    error::{ClaiError, Result},
+    types::*,
+};
 use reqwest::Client;
 use std::sync::{Arc, Mutex};
 

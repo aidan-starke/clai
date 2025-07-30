@@ -1,5 +1,4 @@
-use crate::server::HttpUtils;
-use crate::{error::ClaiError, types::*};
+use crate::{config::Config, error::ClaiError, server::HttpUtils, types::*};
 use axum::response::Json as JsonResponse;
 use serde::Deserialize;
 use tracing::info;
@@ -19,7 +18,7 @@ struct AnthropicModel {
 pub async fn get_models() -> std::result::Result<JsonResponse<Vec<ClaudeModel>>, ClaiError> {
     info!("Fetching available models from Claude API");
 
-    let config = HttpUtils::load_config()?;
+    let config = Config::load()?;
 
     let client = reqwest::Client::new();
 

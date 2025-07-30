@@ -12,10 +12,7 @@ mod server;
 mod sessions;
 mod utils;
 
-pub use utils::config;
-pub use utils::constants;
-pub use utils::error;
-pub use utils::types;
+pub use utils::{config, constants, error, types};
 
 #[derive(Parser)]
 #[command(name = "clai")]

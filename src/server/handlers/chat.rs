@@ -1,9 +1,10 @@
-use crate::server::HttpUtils;
 use crate::{
+    config::Config,
     constants::{CLAUDE_MAX_TOKENS, DEFAULT_MODEL},
     db::ClaiDb,
     error::ClaiError,
     handle_db_operation,
+    server::HttpUtils,
     types::*,
 };
 use axum::{
@@ -47,7 +48,7 @@ pub async fn chat(
         session_id, payload.message
     );
 
-    let config = HttpUtils::load_config()?;
+    let config = Config::load()?;
 
     let client = reqwest::Client::new();
 

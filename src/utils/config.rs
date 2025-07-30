@@ -24,21 +24,18 @@ pub struct Config {
 }
 
 impl Config {
-    /// Load configuration from environment variables
     pub fn load() -> Result<Self> {
         envy::from_env::<Config>()
             .map_err(|e| ClaiError::config(&format!("Failed to load configuration: {}", e)))
     }
 
-    /// Get server bind address
     pub fn server_bind_address(&self) -> String {
         format!("{}:{}", self.clai_server_host, self.clai_server_port)
     }
 }
 
-// Default functions for serde
 fn default_server_url() -> String {
-    crate::constants::DEFAULT_SERVER_URL.to_string()
+    "http://localhost:3500".to_string()
 }
 
 fn default_database_url() -> String {
@@ -46,9 +43,9 @@ fn default_database_url() -> String {
 }
 
 fn default_server_host() -> String {
-    crate::constants::DEFAULT_SERVER_HOST.to_string()
+    "0.0.0.0".to_string()
 }
 
 fn default_server_port() -> u16 {
-    crate::constants::DEFAULT_SERVER_PORT
+    3500
 }
