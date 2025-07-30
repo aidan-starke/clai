@@ -1,4 +1,11 @@
-use crate::{sessions::SessionManager, utils::{self, constants::{COMMANDS, DEFAULT_MODEL}}, write_line, write_spaced};
+use crate::{
+    sessions::SessionManager,
+    utils::{
+        self,
+        constants::{COMMANDS, DEFAULT_MODEL},
+    },
+    write_line, write_spaced,
+};
 
 pub struct CommandHandler {
     session_manager: SessionManager,
@@ -215,16 +222,26 @@ impl CommandHandler {
                 Ok(session) => {
                     let current_model = session.model.as_deref().unwrap_or(DEFAULT_MODEL);
                     write_line!("🤖 Current model: '{}'", current_model);
-                    
+
                     write_line!("");
                     write_line!("📋 Available models:");
                     write_line!("─────────────────");
-                    
+
                     match self.session_manager.get_available_models().await {
                         Ok(models) => {
                             for (i, model) in models.iter().enumerate() {
-                                let indicator = if model.id == current_model { "→" } else { " " };
-                                write_line!("{} {}. {} - {}", indicator, i + 1, model.id, model.display_name);
+                                let indicator = if model.id == current_model {
+                                    "→"
+                                } else {
+                                    " "
+                                };
+                                write_line!(
+                                    "{} {}. {} - {}",
+                                    indicator,
+                                    i + 1,
+                                    model.id,
+                                    model.display_name
+                                );
                             }
                             write_line!("");
                             write_line!("💡 Use '/model <number>' to select a model");
@@ -249,31 +266,37 @@ impl CommandHandler {
 
         // Parse model selection (by number)
         match model_input.parse::<usize>() {
-            Ok(model_index) => {
-                match self.session_manager.get_available_models().await {
-                    Ok(models) => {
-                        if model_index == 0 || model_index > models.len() {
-                            utils::write_error("Invalid model number. Use '/model' to see available options.");
-                            return;
-                        }
-                        
-                        let selected_model = &models[model_index - 1];
-                        match self.session_manager.set_model(selected_model.id.clone()).await {
-                            Ok(_) => {
-                                write_spaced!("🤖 Model set to: '{}'", selected_model.display_name);
-                            }
-                            Err(e) => {
-                                utils::write_error(&format!("Failed to set model: {}", e));
-                            }
-                        }
+            Ok(model_index) => match self.session_manager.get_available_models().await {
+                Ok(models) => {
+                    if model_index == 0 || model_index > models.len() {
+                        utils::write_error(
+                            "Invalid model number. Use '/model' to see available options.",
+                        );
+                        return;
                     }
-                    Err(e) => {
-                        utils::write_error(&format!("Failed to fetch available models: {}", e));
+
+                    let selected_model = &models[model_index - 1];
+                    match self
+                        .session_manager
+                        .set_model(selected_model.id.clone())
+                        .await
+                    {
+                        Ok(_) => {
+                            write_spaced!("🤖 Model set to: '{}'", selected_model.display_name);
+                        }
+                        Err(e) => {
+                            utils::write_error(&format!("Failed to set model: {}", e));
+                        }
                     }
                 }
-            }
+                Err(e) => {
+                    utils::write_error(&format!("Failed to fetch available models: {}", e));
+                }
+            },
             Err(_) => {
-                utils::write_error("Please provide a valid number. Use '/model' to see available options.");
+                utils::write_error(
+                    "Please provide a valid number. Use '/model' to see available options.",
+                );
             }
         }
     }

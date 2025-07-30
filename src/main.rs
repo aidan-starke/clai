@@ -33,12 +33,12 @@ async fn main() -> error::Result<()> {
         utils::ensure_server_running().await?;
     }
 
-    let server_url =
-        env::var("CLAI_SERVER_URL").unwrap_or_else(|_| utils::constants::DEFAULT_SERVER_URL.to_string());
+    let server_url = env::var("CLAI_SERVER_URL")
+        .unwrap_or_else(|_| utils::constants::DEFAULT_SERVER_URL.to_string());
 
     let session_manager = SessionManager::new(server_url);
     let (session_id, session_name) = session_manager.init().await?;
-    
+
     let command_handler = CommandHandler::new(session_manager.clone());
 
     utils::clear_screen()?;

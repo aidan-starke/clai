@@ -2,9 +2,9 @@ pub mod chat;
 pub mod models;
 pub mod session;
 
+use crate::error::ClaiError;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use crate::error::ClaiError;
 
 pub async fn health() -> StatusCode {
     StatusCode::OK

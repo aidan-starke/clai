@@ -1,5 +1,5 @@
-use crate::utils::types::*;
 use crate::error::{ClaiError, Result};
+use crate::utils::types::*;
 use reqwest::Client;
 use std::cell::Cell;
 
@@ -86,7 +86,10 @@ impl SessionManager {
             let session: SessionResponse = response.json().await?;
             Ok(session)
         } else {
-            return Err(ClaiError::server(format!("Failed to get session info: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to get session info: {}",
+                response.status()
+            )));
         }
     }
 
@@ -107,7 +110,10 @@ impl SessionManager {
             let session: SessionResponse = response.json().await?;
             Ok(session.id)
         } else if response.status() == reqwest::StatusCode::NOT_FOUND {
-            return Err(ClaiError::session(format!("Session '{}' not found", session_name)));
+            return Err(ClaiError::session(format!(
+                "Session '{}' not found",
+                session_name
+            )));
         } else {
             return Err(ClaiError::server(format!(
                 "Failed to get session '{}': {}",
@@ -136,7 +142,10 @@ impl SessionManager {
             self.set_current_session(session.id);
             Ok(session.id)
         } else {
-            return Err(ClaiError::server(format!("Failed to create session: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to create session: {}",
+                response.status()
+            )));
         }
     }
 
@@ -155,7 +164,10 @@ impl SessionManager {
             .await?;
 
         if !response.status().is_success() {
-            return Err(ClaiError::server(format!("Failed to save session: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to save session: {}",
+                response.status()
+            )));
         }
 
         Ok(())
@@ -173,9 +185,15 @@ impl SessionManager {
             .await?;
 
         if response.status() == reqwest::StatusCode::NOT_FOUND {
-            return Err(ClaiError::session(format!("Session '{}' not found", session_name)));
+            return Err(ClaiError::session(format!(
+                "Session '{}' not found",
+                session_name
+            )));
         } else if !response.status().is_success() {
-            return Err(ClaiError::server(format!("Failed to delete session: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to delete session: {}",
+                response.status()
+            )));
         }
 
         Ok(())
@@ -194,7 +212,10 @@ impl SessionManager {
             .await?;
 
         if !response.status().is_success() {
-            return Err(ClaiError::server(format!("Failed to set role: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to set role: {}",
+                response.status()
+            )));
         }
 
         Ok(())
@@ -213,7 +234,10 @@ impl SessionManager {
             .await?;
 
         if !response.status().is_success() {
-            return Err(ClaiError::server(format!("Failed to get sessions: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to get sessions: {}",
+                response.status()
+            )));
         }
 
         let sessions: Vec<SessionResponse> = response.json().await?;
@@ -233,7 +257,10 @@ impl SessionManager {
             let models: Vec<ClaudeModel> = response.json().await?;
             Ok(models)
         } else {
-            return Err(ClaiError::server(format!("Failed to get models: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to get models: {}",
+                response.status()
+            )));
         }
     }
 
@@ -244,13 +271,19 @@ impl SessionManager {
 
         let response = self
             .client
-            .put(&format!("{}/sessions/{}/model", self.server_url, session_id))
+            .put(&format!(
+                "{}/sessions/{}/model",
+                self.server_url, session_id
+            ))
             .json(&request)
             .send()
             .await?;
 
         if !response.status().is_success() {
-            return Err(ClaiError::server(format!("Failed to set model: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to set model: {}",
+                response.status()
+            )));
         }
 
         Ok(())
@@ -276,7 +309,10 @@ impl SessionManager {
             let chat_response: ChatResponse = response.json().await?;
             Ok(chat_response.response)
         } else {
-            return Err(ClaiError::server(format!("Failed to send message: {}", response.status())));
+            return Err(ClaiError::server(format!(
+                "Failed to send message: {}",
+                response.status()
+            )));
         }
     }
 }

@@ -30,7 +30,6 @@ pub enum ClaiError {
     /// Serialization errors
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-
 }
 
 impl ClaiError {
@@ -54,7 +53,6 @@ impl ClaiError {
             message: message.into(),
         }
     }
-
 }
 
 /// Convenient Result type alias
@@ -77,4 +75,3 @@ impl From<ClaiError> for axum::http::StatusCode {
         }
     }
 }
-

@@ -9,6 +9,20 @@ use axum::{
 };
 use tracing::{info, warn};
 
+/// Creates a JSON response from a session model.
+/// Takes a session from database models and returns Ok(JsonResponse(SessionResponse)).
+macro_rules! json_response {
+    ($session:expr) => {
+        Ok(JsonResponse(SessionResponse {
+            id: $session.id,
+            name: $session.name,
+            display_name: $session.display_name,
+            role: $session.role,
+            model: $session.model,
+        }))
+    };
+}
+
 // CREATE operations
 pub async fn create_session(
     Json(payload): Json<CreateSessionRequest>,
@@ -28,15 +42,7 @@ pub async fn create_session(
 
     utils::cleanup_old_sessions();
 
-    let response = SessionResponse {
-        id: session.id,
-        name: session.name,
-        display_name: session.display_name,
-        role: session.role,
-        model: session.model,
-    };
-
-    Ok(JsonResponse(response))
+    json_response!(session)
 }
 
 // READ operations
@@ -56,15 +62,7 @@ pub async fn get_last_session() -> std::result::Result<JsonResponse<SessionRespo
         session.id, session.name
     );
 
-    let response = SessionResponse {
-        id: session.id,
-        name: session.name,
-        display_name: session.display_name,
-        role: session.role,
-        model: session.model,
-    };
-
-    Ok(JsonResponse(response))
+    json_response!(session)
 }
 
 pub async fn get_session_by_name(
@@ -82,15 +80,7 @@ pub async fn get_session_by_name(
         warn!("Failed to update session timestamp: {}", e);
     }
 
-    let response = SessionResponse {
-        id: session.id,
-        name: session.name,
-        display_name: session.display_name,
-        role: session.role,
-        model: session.model,
-    };
-
-    Ok(JsonResponse(response))
+    json_response!(session)
 }
 
 pub async fn list_sessions() -> std::result::Result<JsonResponse<Vec<SessionResponse>>, ClaiError> {
@@ -125,15 +115,7 @@ pub async fn get_session_by_id(
 
     info!("Found session: ID {}, name: {}", session_id, session.name);
 
-    let response = SessionResponse {
-        id: session.id,
-        name: session.name,
-        display_name: session.display_name,
-        role: session.role,
-        model: session.model,
-    };
-
-    Ok(JsonResponse(response))
+    json_response!(session)
 }
 
 // UPDATE operations
@@ -154,15 +136,7 @@ pub async fn save_session(
 
     info!("Saved session {} as '{}'", session_id, payload.display_name);
 
-    let response = SessionResponse {
-        id: session.id,
-        name: session.name,
-        display_name: session.display_name,
-        role: session.role,
-        model: session.model,
-    };
-
-    Ok(JsonResponse(response))
+    json_response!(session)
 }
 
 pub async fn set_role(
@@ -182,15 +156,7 @@ pub async fn set_role(
 
     info!("Updated session {} role to: {:?}", session_id, payload.role);
 
-    let response = SessionResponse {
-        id: session.id,
-        name: session.name,
-        display_name: session.display_name,
-        role: session.role,
-        model: session.model,
-    };
-
-    Ok(JsonResponse(response))
+    json_response!(session)
 }
 
 pub async fn set_model(
@@ -210,19 +176,13 @@ pub async fn set_model(
 
     info!("Updated session {} model to: {}", session_id, payload.model);
 
-    let response = SessionResponse {
-        id: session.id,
-        name: session.name,
-        display_name: session.display_name,
-        role: session.role,
-        model: session.model,
-    };
-
-    Ok(JsonResponse(response))
+    json_response!(session)
 }
 
 // DELETE operations
-pub async fn delete_session(Path(name): Path<String>) -> std::result::Result<JsonResponse<()>, ClaiError> {
+pub async fn delete_session(
+    Path(name): Path<String>,
+) -> std::result::Result<JsonResponse<()>, ClaiError> {
     info!("Deleting session by name: {}", name);
 
     let mut db = ClaiDb::get();

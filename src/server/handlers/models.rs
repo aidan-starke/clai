@@ -65,4 +65,3 @@ pub async fn get_models() -> std::result::Result<JsonResponse<Vec<ClaudeModel>>,
 
     Ok(JsonResponse(models))
 }
-

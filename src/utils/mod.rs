@@ -52,7 +52,10 @@ pub fn write_command_help() {
         ("📚 /list", "Show all saved sessions"),
         ("🔄 /resume <name>", "Switch to a different session"),
         ("🎭 /role [role]", "Set or view current role"),
-        ("🤖 /model [number]", "View or set the AI model for this session"),
+        (
+            "🤖 /model [number]",
+            "View or set the AI model for this session",
+        ),
     ];
 
     for (command, description) in &commands {
@@ -64,7 +67,6 @@ pub fn write_command_help() {
     }
     write_line!("");
 }
-
 
 pub async fn ensure_server_running() -> Result<()> {
     let server_url =

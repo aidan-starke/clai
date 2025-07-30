@@ -198,4 +198,3 @@ impl Default for InputReader {
         Self::new()
     }
 }
-

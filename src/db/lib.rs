@@ -123,11 +123,7 @@ impl ClaiDb {
         sessions::table.find(session_id).first(conn)
     }
 
-    pub fn update_session_model(
-        &mut self,
-        session_id: i32,
-        model: &str,
-    ) -> QueryResult<Session> {
+    pub fn update_session_model(&mut self, session_id: i32, model: &str) -> QueryResult<Session> {
         let conn = self.connection();
         diesel::update(sessions::table.find(session_id))
             .set(sessions::model.eq(model))
