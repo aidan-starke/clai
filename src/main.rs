@@ -73,8 +73,6 @@ async fn main() -> error::Result<()> {
 
                 // Handle slash commands
                 if message.starts_with('/') {
-                    write_spaced!("You entered: {}", style(message).yellow().bold());
-
                     command_handler.handle_command(message).await;
                     continue;
                 }

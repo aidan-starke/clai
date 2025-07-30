@@ -116,6 +116,22 @@ impl CommandHandler {
             return;
         }
 
+        // Check if user is trying to delete the current session
+        match self.session_manager.get_session_info().await {
+            Ok(current_session) => {
+                if let Some(current_display_name) = &current_session.display_name {
+                    if current_display_name == session_name {
+                        utils::write_error("Cannot delete the current session. Switch to another session first using /resume or /new.");
+                        return;
+                    }
+                }
+            }
+            Err(e) => {
+                utils::write_error(&format!("Failed to get current session info: {}", e));
+                return;
+            }
+        }
+
         match self.session_manager.delete_session(session_name).await {
             Ok(_) => {
                 write_spaced!("🗑️ Session '{}' deleted successfully", session_name);
@@ -159,6 +175,7 @@ impl CommandHandler {
                     return;
                 }
 
+                write_line!("");
                 write_line!("📚 Saved Sessions:");
                 write_line!("─────────────────");
                 for session in sessions {
@@ -170,6 +187,7 @@ impl CommandHandler {
                         }
                     }
                 }
+                write_line!("");
                 ()
             }
             Err(e) => {
