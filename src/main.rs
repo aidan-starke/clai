@@ -2,12 +2,14 @@
 use clap::Parser;
 use commands::CommandHandler;
 use console::style;
+use input::InputReader;
 use sessions::SessionManager;
 use std::env;
 
 mod commands;
 mod db;
 mod error;
+mod input;
 mod server;
 mod sessions;
 mod utils;
@@ -52,8 +54,10 @@ async fn main() -> error::Result<()> {
 
     utils::write_session_info(session_id, &session_name);
 
+    let mut input_reader = InputReader::new();
+
     loop {
-        match utils::read_input_with_autocomplete() {
+        match input_reader.read_line() {
             Ok(input) => {
                 let message = input.trim();
 
