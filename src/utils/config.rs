@@ -25,6 +25,7 @@ pub struct Config {
 
 impl Config {
     pub fn load() -> Result<Self> {
+        dotenv::dotenv().ok();
         envy::from_env::<Config>()
             .map_err(|e| ClaiError::config(&format!("Failed to load configuration: {}", e)))
     }

@@ -7,8 +7,6 @@ use tracing::info;
 use crate::{config::Config, db::ClaiDb, error::Result, server::handlers, utils};
 
 pub async fn run_server(debug_mode: bool) -> Result<()> {
-    dotenv::dotenv().ok();
-
     if debug_mode {
         tracing_subscriber::fmt().init();
     }
