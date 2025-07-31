@@ -18,16 +18,17 @@ pub use utils::{config, constants, error, types};
 #[command(name = "clai")]
 #[command(about = "Command Line Artificial Interface (CLAI)")]
 struct Cli {
-    #[arg(long, help = "Run server")]
+        #[arg(long, help = "Run server")]
     server: bool,
 }
 
 #[tokio::main]
 async fn main() -> error::Result<()> {
-    let cli = Cli::parse();
+    let   cli = Cli::parse();
 
     // Handle server mode
     if cli.server {
+
         return server::run_server(true).await;
     } else {
         utils::ensure_server_running().await?;
@@ -36,7 +37,8 @@ async fn main() -> error::Result<()> {
     let config = config::Config::load()?;
 
     let session_manager = SessionManager::new(config.clai_server_url);
-    let (session_id, session_name) = session_manager.init().await?;
+    let (session_id, session_name) = session_manager
+        .init().await?;
 
     let command_handler = CommandHandler::new(session_manager.clone());
 
