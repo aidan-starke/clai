@@ -29,5 +29,3 @@ pub fn db_test(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-
-
