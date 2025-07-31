@@ -1,5 +1,6 @@
 use crate::{constants::COMMANDS, utils};
 use console::{style, Key, Term};
+use std::io::Error;
 
 pub struct InputReader {
     term: &'static Term,
@@ -24,7 +25,7 @@ impl InputReader {
         }
     }
 
-    pub fn read_line(&mut self) -> std::result::Result<String, std::io::Error> {
+    pub fn read_line(&mut self) -> Result<String, Error> {
         self.input.clear();
         self.show_dropdown = false;
         self.selected_index = 0;
@@ -62,7 +63,7 @@ impl InputReader {
         }
     }
 
-    fn handle_key(&mut self, key: Key) -> std::result::Result<Option<String>, std::io::Error> {
+    fn handle_key(&mut self, key: Key) -> Result<Option<String>, Error> {
         match key {
             Key::Enter => {
                 // Select command if dropdown is showing
@@ -162,7 +163,7 @@ impl InputReader {
         }
     }
 
-    fn clear_dropdown(&mut self) -> std::result::Result<(), std::io::Error> {
+    fn clear_dropdown(&mut self) -> Result<(), Error> {
         if self.dropdown_lines > 0 {
             for _ in 0..self.dropdown_lines {
                 self.term.move_cursor_down(1)?;
@@ -176,14 +177,14 @@ impl InputReader {
         Ok(())
     }
 
-    fn render(&self) -> std::result::Result<(), std::io::Error> {
+    fn render(&self) -> Result<(), Error> {
         self.term.clear_line()?;
         self.term
             .write_str(&format!("{}: {}", style("You").green(), self.input))?;
         Ok(())
     }
 
-    fn update_dropdown(&mut self) -> std::result::Result<(), std::io::Error> {
+    fn update_dropdown(&mut self) -> Result<(), Error> {
         let filtered_commands = Self::get_filtered_commands(&self.input);
 
         if !filtered_commands.is_empty() {
@@ -207,7 +208,7 @@ impl InputReader {
         Ok(())
     }
 
-    fn finalize_input(&mut self, result: &str) -> std::result::Result<(), std::io::Error> {
+    fn finalize_input(&mut self, result: &str) -> Result<(), Error> {
         if self.dropdown_lines > 0 {
             for _ in 0..self.dropdown_lines {
                 self.term.move_cursor_down(1)?;

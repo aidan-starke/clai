@@ -42,7 +42,7 @@ struct ClaudeContent {
 pub async fn chat(
     Path(session_id): Path<i32>,
     Json(payload): Json<ChatRequest>,
-) -> std::result::Result<JsonResponse<ChatResponse>, ClaiError> {
+) -> Result<JsonResponse<ChatResponse>, ClaiError> {
     info!(
         "Chat request for session {} with message: {}",
         session_id, payload.message

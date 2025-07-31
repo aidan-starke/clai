@@ -22,7 +22,7 @@ macro_rules! json_response {
 // CREATE operations
 pub async fn create_session(
     Json(payload): Json<CreateSessionRequest>,
-) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Creating new session with name: {}", payload.name);
 
     let session = handle_db_operation!(
@@ -41,7 +41,7 @@ pub async fn create_session(
 }
 
 // READ operations
-pub async fn get_last_session() -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting last session");
 
     let session = handle_db_operation!("get last session", ClaiDb::get_last_session());
@@ -61,7 +61,7 @@ pub async fn get_last_session() -> std::result::Result<JsonResponse<SessionRespo
 
 pub async fn get_session_by_name(
     Path(name): Path<String>,
-) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by name: {}", name);
 
     let session = handle_db_operation!("get session by name", ClaiDb::get_session_by_name(&name));
@@ -76,7 +76,7 @@ pub async fn get_session_by_name(
     json_response!(session)
 }
 
-pub async fn list_sessions() -> std::result::Result<JsonResponse<Vec<SessionResponse>>, ClaiError> {
+pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, ClaiError> {
     info!("Listing named sessions");
 
     let sessions = handle_db_operation!("list sessions", ClaiDb::list_named_sessions());
@@ -99,7 +99,7 @@ pub async fn list_sessions() -> std::result::Result<JsonResponse<Vec<SessionResp
 
 pub async fn get_session_by_id(
     Path(session_id): Path<i32>,
-) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by ID: {}", session_id);
 
     let session = handle_db_operation!("get session by id", ClaiDb::get_session_by_id(session_id));
@@ -113,7 +113,7 @@ pub async fn get_session_by_id(
 pub async fn save_session(
     Path(session_id): Path<i32>,
     Json(payload): Json<SaveSessionRequest>,
-) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!(
         "Saving session {} with display name: {}",
         session_id, payload.display_name
@@ -132,7 +132,7 @@ pub async fn save_session(
 pub async fn set_role(
     Path(session_id): Path<i32>,
     Json(payload): Json<SetRoleRequest>,
-) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!(
         "Setting role for session {} to: {:?}",
         session_id, payload.role
@@ -151,7 +151,7 @@ pub async fn set_role(
 pub async fn set_model(
     Path(session_id): Path<i32>,
     Json(payload): Json<SetModelRequest>,
-) -> std::result::Result<JsonResponse<SessionResponse>, ClaiError> {
+) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!(
         "Setting model for session {} to: {}",
         session_id, payload.model
@@ -168,9 +168,7 @@ pub async fn set_model(
 }
 
 // DELETE operations
-pub async fn delete_session(
-    Path(name): Path<String>,
-) -> std::result::Result<JsonResponse<()>, ClaiError> {
+pub async fn delete_session(Path(name): Path<String>) -> Result<JsonResponse<()>, ClaiError> {
     info!("Deleting session by name: {}", name);
 
     handle_db_operation!("delete session", ClaiDb::delete_session_by_name(&name));

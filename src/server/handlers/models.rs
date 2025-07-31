@@ -15,7 +15,7 @@ struct AnthropicModel {
     created_at: String,
 }
 
-pub async fn get_models() -> std::result::Result<JsonResponse<Vec<ClaudeModel>>, ClaiError> {
+pub async fn get_models() -> Result<JsonResponse<Vec<ClaudeModel>>, ClaiError> {
     info!("Fetching available models from Claude API");
 
     let config = Config::load()?;
