@@ -35,6 +35,9 @@ jobs:
       - name: Check code compiles
         run: cargo check
 
+      - name: Run tests
+        run: cargo test -- --test-threads=1
+
       - name: Run cargo fmt
         run: cargo fmt
         if: github.event_name == 'push'

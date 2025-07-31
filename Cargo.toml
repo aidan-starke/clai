@@ -7,6 +7,10 @@ edition = "2021"
 name = "clai"
 path = "src/main.rs"
 
+[lib]
+name = "clai"
+path = "src/lib.rs"
+
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -26,3 +30,13 @@ indicatif = "0.18.0"
 console = "0.16.0"
 envy = "0.4.2"
 dotenv = "0.15.0"
+
+[dev-dependencies]
+axum-test = "17.3.0"
+proc-macro2 = "1.0.95"
+quote = "1.0.40"
+syn = "2.0.104"
+tempfile = "3.20.0"
+tokio-test = "0.4.4"
+test_macros = { path = "test_macros" }
+timewarp = "0.4.0"
