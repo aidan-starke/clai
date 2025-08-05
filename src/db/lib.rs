@@ -1,5 +1,5 @@
 use chrono::Utc;
-use std::sync::OnceLock;
+use std::{fs::File, path::Path, sync::OnceLock};
 
 use entity::{messages, sessions};
 use migration::{Migrator, MigratorTrait};
@@ -27,6 +27,19 @@ impl ClaiDb {
     }
 
     pub async fn init_with_url(database_url: &str) -> Result<()> {
+        let file_path = database_url
+            .strip_prefix("sqlite://")
+            .unwrap_or(database_url);
+
+        if !Path::new(file_path).exists() {
+            File::create(file_path).map_err(|e| {
+                ClaiError::server(format!(
+                    "Failed to create database file {}: {}",
+                    file_path, e
+                ))
+            })?;
+        }
+
         let connection = Database::connect(database_url).await.map_err(|e| {
             ClaiError::server(format!("Failed to connect to {}: {}", database_url, e))
         })?;
