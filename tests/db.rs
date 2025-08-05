@@ -16,10 +16,7 @@ impl Get for TestDb {
     }
 }
 
-#[tokio::test]
-async fn test_create_session() {
-    let test_db = TestDb::get().await;
-
+test_with!(test_create_session, TestDb::get().await, |test_db| {
     let now = Utc::now().naive_utc();
     let new_session = sessions::ActiveModel {
         name: Set("test_session".to_owned()),
@@ -39,12 +36,9 @@ async fn test_create_session() {
     assert_eq!(session.name, "test_session");
     assert_eq!(session.display_name, Some("Test Session".to_string()));
     assert!(session.id > 0);
-}
+});
 
-#[tokio::test]
-async fn test_find_session_by_id() {
-    let test_db = TestDb::get().await;
-
+test_with!(test_find_session_by_id, TestDb::get().await, |test_db| {
     let now = Utc::now().naive_utc();
     let new_session = sessions::ActiveModel {
         name: Set("test_session".to_owned()),
@@ -69,45 +63,43 @@ async fn test_find_session_by_id() {
 
     assert_eq!(found_session.name, "test_session");
     assert_eq!(found_session.display_name, Some("Test Session".to_string()));
-}
+});
 
-#[tokio::test]
-async fn test_find_session_by_display_name() {
-    let test_db = TestDb::get().await;
+test_with!(
+    test_find_session_by_display_name,
+    TestDb::get().await,
+    |test_db| {
+        let now = Utc::now().naive_utc();
+        let new_session = sessions::ActiveModel {
+            name: Set("test_session".to_owned()),
+            display_name: Set(Some("Named Session".to_owned())),
+            created_at: Set(now),
+            updated_at: Set(now),
+            role: Set(None),
+            model: Set(None),
+            ..Default::default()
+        };
 
-    let now = Utc::now().naive_utc();
-    let new_session = sessions::ActiveModel {
-        name: Set("test_session".to_owned()),
-        display_name: Set(Some("Named Session".to_owned())),
-        created_at: Set(now),
-        updated_at: Set(now),
-        role: Set(None),
-        model: Set(None),
-        ..Default::default()
-    };
+        let _created_session = new_session
+            .insert(test_db.connection())
+            .await
+            .expect("Failed to create session");
 
-    let _created_session = new_session
-        .insert(test_db.connection())
-        .await
-        .expect("Failed to create session");
+        let found_session = sessions::Entity::find()
+            .filter(sessions::Column::DisplayName.eq("Named Session"))
+            .one(test_db.connection())
+            .await
+            .expect("Failed to query session")
+            .expect("Session not found");
 
-    let found_session = sessions::Entity::find()
-        .filter(sessions::Column::DisplayName.eq("Named Session"))
-        .one(test_db.connection())
-        .await
-        .expect("Failed to query session")
-        .expect("Session not found");
+        assert_eq!(
+            found_session.display_name,
+            Some("Named Session".to_string())
+        );
+    }
+);
 
-    assert_eq!(
-        found_session.display_name,
-        Some("Named Session".to_string())
-    );
-}
-
-#[tokio::test]
-async fn test_list_named_sessions() {
-    let test_db = TestDb::get().await;
-
+test_with!(test_list_named_sessions, TestDb::get().await, |test_db| {
     let now = Utc::now().naive_utc();
 
     // Create unnamed session
@@ -165,12 +157,9 @@ async fn test_list_named_sessions() {
 
     assert!(named_sessions.len() >= 2);
     assert!(named_sessions.iter().all(|s| s.display_name.is_some()));
-}
+});
 
-#[tokio::test]
-async fn test_create_message() {
-    let test_db = TestDb::get().await;
-
+test_with!(test_create_message, TestDb::get().await, |test_db| {
     // First create a session
     let now = Utc::now().naive_utc();
     let new_session = sessions::ActiveModel {
@@ -206,12 +195,9 @@ async fn test_create_message() {
     assert_eq!(message.role, "user");
     assert_eq!(message.content, "Hello, world!");
     assert!(message.id > 0);
-}
+});
 
-#[tokio::test]
-async fn test_get_session_messages() {
-    let test_db = TestDb::get().await;
-
+test_with!(test_get_session_messages, TestDb::get().await, |test_db| {
     // Create a session
     let now = Utc::now().naive_utc();
     let new_session = sessions::ActiveModel {
@@ -269,12 +255,9 @@ async fn test_get_session_messages() {
     assert_eq!(messages[1].content, "Second message");
     assert_eq!(messages[0].role, "user");
     assert_eq!(messages[1].role, "assistant");
-}
+});
 
-#[tokio::test]
-async fn test_update_session() {
-    let test_db = TestDb::get().await;
-
+test_with!(test_update_session, TestDb::get().await, |test_db| {
     // Create a session
     let now = Utc::now().naive_utc();
     let new_session = sessions::ActiveModel {
@@ -307,12 +290,9 @@ async fn test_update_session() {
         Some("Updated Name".to_string())
     );
     assert_eq!(updated_session.role, Some("assistant".to_string()));
-}
+});
 
-#[tokio::test]
-async fn test_delete_session() {
-    let test_db = TestDb::get().await;
-
+test_with!(test_delete_session, TestDb::get().await, |test_db| {
     // Create a session
     let now = Utc::now().naive_utc();
     let new_session = sessions::ActiveModel {
@@ -343,4 +323,4 @@ async fn test_delete_session() {
         .expect("Failed to query for deleted session");
 
     assert!(result.is_none());
-}
+});

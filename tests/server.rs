@@ -62,118 +62,118 @@ async fn create_test_server() -> TestServer {
     TestServer::new(app).expect("Failed to create test server")
 }
 
-#[tokio::test]
-async fn test_health_endpoint() {
-    let server = create_test_server().await;
+test_with!(test_health_endpoint, create_test_server().await, |server| {
     let response = server.get("/health").await;
     assert_eq!(response.status_code(), StatusCode::OK);
-}
+});
 
-#[tokio::test]
-async fn test_create_session_with_display_name() {
-    let server = create_test_server().await;
+test_with!(
+    test_create_session_with_display_name,
+    create_test_server().await,
+    |server| {
+        let payload = json!({
+            "name": "test_session",
+            "display_name": "Test Session"
+        });
 
-    let payload = json!({
-        "name": "test_session",
-        "display_name": "Test Session"
-    });
+        let response = server.post("/sessions").json(&payload).await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    let response = server.post("/sessions").json(&payload).await;
-    assert_eq!(response.status_code(), StatusCode::OK);
+        let session: SessionResponse = response.json();
+        assert_eq!(session.name, "test_session");
+        assert_eq!(session.display_name, Some("Test Session".to_string()));
+        assert!(session.id > 0);
+    }
+);
 
-    let session: SessionResponse = response.json();
-    assert_eq!(session.name, "test_session");
-    assert_eq!(session.display_name, Some("Test Session".to_string()));
-    assert!(session.id > 0);
-}
+test_with!(
+    test_create_session_without_display_name,
+    create_test_server().await,
+    |server| {
+        let payload = json!({
+            "name": "anonymous_session"
+        });
 
-#[tokio::test]
-async fn test_create_session_without_display_name() {
-    let server = create_test_server().await;
+        let response = server.post("/sessions").json(&payload).await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    let payload = json!({
-        "name": "anonymous_session"
-    });
+        let session: SessionResponse = response.json();
+        assert_eq!(session.name, "anonymous_session");
+        assert_eq!(session.display_name, None);
+        assert!(session.id > 0);
+    }
+);
 
-    let response = server.post("/sessions").json(&payload).await;
-    assert_eq!(response.status_code(), StatusCode::OK);
+test_with!(
+    test_get_session_by_id,
+    create_test_server().await,
+    |server| {
+        // Create a session first
+        let payload = json!({
+            "name": "test_session",
+            "display_name": "Test Session"
+        });
 
-    let session: SessionResponse = response.json();
-    assert_eq!(session.name, "anonymous_session");
-    assert_eq!(session.display_name, None);
-    assert!(session.id > 0);
-}
+        let create_response = server.post("/sessions").json(&payload).await;
+        let created_session: SessionResponse = create_response.json();
 
-#[tokio::test]
-async fn test_get_session_by_id() {
-    let server = create_test_server().await;
+        // Get the session by ID
+        let response = server
+            .get(&format!("/sessions/{}", created_session.id))
+            .await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    // Create a session first
-    let payload = json!({
-        "name": "test_session",
-        "display_name": "Test Session"
-    });
+        let fetched_session: SessionResponse = response.json();
+        assert_eq!(fetched_session.id, created_session.id);
+        assert_eq!(fetched_session.name, "test_session");
+        assert_eq!(
+            fetched_session.display_name,
+            Some("Test Session".to_string())
+        );
+    }
+);
 
-    let create_response = server.post("/sessions").json(&payload).await;
-    let created_session: SessionResponse = create_response.json();
+test_with!(
+    test_get_nonexistent_session_by_id,
+    create_test_server().await,
+    |server| {
+        let response = server.get("/sessions/99999").await;
+        assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
+    }
+);
 
-    // Get the session by ID
-    let response = server
-        .get(&format!("/sessions/{}", created_session.id))
-        .await;
-    assert_eq!(response.status_code(), StatusCode::OK);
+test_with!(
+    test_get_last_session,
+    create_test_server().await,
+    |server| {
+        // Create two sessions
+        let payload1 = json!({
+            "name": "session1",
+            "display_name": "First Session"
+        });
 
-    let fetched_session: SessionResponse = response.json();
-    assert_eq!(fetched_session.id, created_session.id);
-    assert_eq!(fetched_session.name, "test_session");
-    assert_eq!(
-        fetched_session.display_name,
-        Some("Test Session".to_string())
-    );
-}
+        let payload2 = json!({
+            "name": "session2",
+            "display_name": "Second Session"
+        });
 
-#[tokio::test]
-async fn test_get_nonexistent_session_by_id() {
-    let server = create_test_server().await;
+        let response1 = server.post("/sessions").json(&payload1).await;
+        let _session1: SessionResponse = response1.json();
 
-    let response = server.get("/sessions/99999").await;
-    assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
-}
+        let response2 = server.post("/sessions").json(&payload2).await;
+        let _session2: SessionResponse = response2.json();
 
-#[tokio::test]
-async fn test_get_last_session() {
-    let server = create_test_server().await;
+        // Get the last session (should be session2 since it was created after session1)
+        let response = server.get("/sessions/last").await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    // Create two sessions
-    let payload1 = json!({
-        "name": "session1",
-        "display_name": "First Session"
-    });
+        let last_session: SessionResponse = response.json();
+        assert!(last_session.id > 0);
+        assert!(last_session.display_name.is_some());
+    }
+);
 
-    let payload2 = json!({
-        "name": "session2",
-        "display_name": "Second Session"
-    });
-
-    let response1 = server.post("/sessions").json(&payload1).await;
-    let _session1: SessionResponse = response1.json();
-
-    let response2 = server.post("/sessions").json(&payload2).await;
-    let _session2: SessionResponse = response2.json();
-
-    // Get the last session (should be session2 since it was created after session1)
-    let response = server.get("/sessions/last").await;
-    assert_eq!(response.status_code(), StatusCode::OK);
-
-    let last_session: SessionResponse = response.json();
-    assert!(last_session.id > 0);
-    assert!(last_session.display_name.is_some());
-}
-
-#[tokio::test]
-async fn test_list_sessions() {
-    let server = create_test_server().await;
-
+test_with!(test_list_sessions, create_test_server().await, |server| {
     // Create two named sessions
     let payload1 = json!({
         "name": "session1",
@@ -204,12 +204,9 @@ async fn test_list_sessions() {
         .collect();
     assert!(our_session_names.contains(&"Named Session 1"));
     assert!(our_session_names.contains(&"Named Session 2"));
-}
+});
 
-#[tokio::test]
-async fn test_save_session() {
-    let server = create_test_server().await;
-
+test_with!(test_save_session, create_test_server().await, |server| {
     // Create a session
     let payload = json!({
         "name": "test_session",
@@ -236,130 +233,137 @@ async fn test_save_session() {
         Some("Updated Name".to_string())
     );
     assert_eq!(updated_session.id, session.id);
-}
+});
 
-#[tokio::test]
-async fn test_set_session_role() {
-    let server = create_test_server().await;
+test_with!(
+    test_set_session_role,
+    create_test_server().await,
+    |server| {
+        // Create a session
+        let payload = json!({
+            "name": "test_session",
+            "display_name": "Test Session"
+        });
 
-    // Create a session
-    let payload = json!({
-        "name": "test_session",
-        "display_name": "Test Session"
-    });
+        let create_response = server.post("/sessions").json(&payload).await;
+        let session: SessionResponse = create_response.json();
 
-    let create_response = server.post("/sessions").json(&payload).await;
-    let session: SessionResponse = create_response.json();
+        // Set the role
+        let role_payload = json!({
+            "role": "helpful assistant"
+        });
 
-    // Set the role
-    let role_payload = json!({
-        "role": "helpful assistant"
-    });
+        let response = server
+            .put(&format!("/sessions/{}/role", session.id))
+            .json(&role_payload)
+            .await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    let response = server
-        .put(&format!("/sessions/{}/role", session.id))
-        .json(&role_payload)
-        .await;
-    assert_eq!(response.status_code(), StatusCode::OK);
+        let updated_session: SessionResponse = response.json();
+        assert_eq!(updated_session.role, Some("helpful assistant".to_string()));
+    }
+);
 
-    let updated_session: SessionResponse = response.json();
-    assert_eq!(updated_session.role, Some("helpful assistant".to_string()));
-}
+test_with!(
+    test_set_session_model,
+    create_test_server().await,
+    |server| {
+        // Create a session
+        let payload = json!({
+            "name": "test_session",
+            "display_name": "Test Session"
+        });
 
-#[tokio::test]
-async fn test_set_session_model() {
-    let server = create_test_server().await;
+        let create_response = server.post("/sessions").json(&payload).await;
+        let session: SessionResponse = create_response.json();
 
-    // Create a session
-    let payload = json!({
-        "name": "test_session",
-        "display_name": "Test Session"
-    });
+        // Set the model
+        let model_payload = json!({
+            "model": "claude-3-sonnet"
+        });
 
-    let create_response = server.post("/sessions").json(&payload).await;
-    let session: SessionResponse = create_response.json();
+        let response = server
+            .put(&format!("/sessions/{}/model", session.id))
+            .json(&model_payload)
+            .await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    // Set the model
-    let model_payload = json!({
-        "model": "claude-3-sonnet"
-    });
+        let updated_session: SessionResponse = response.json();
+        assert_eq!(updated_session.model, Some("claude-3-sonnet".to_string()));
+    }
+);
 
-    let response = server
-        .put(&format!("/sessions/{}/model", session.id))
-        .json(&model_payload)
-        .await;
-    assert_eq!(response.status_code(), StatusCode::OK);
+test_with!(
+    test_get_session_by_name,
+    create_test_server().await,
+    |server| {
+        // Create a session
+        let payload = json!({
+            "name": "test_session",
+            "display_name": "Test Session"
+        });
 
-    let updated_session: SessionResponse = response.json();
-    assert_eq!(updated_session.model, Some("claude-3-sonnet".to_string()));
-}
+        server.post("/sessions").json(&payload).await;
 
-#[tokio::test]
-async fn test_get_session_by_name() {
-    let server = create_test_server().await;
+        // Get session by display name
+        let response = server.get("/sessions/by-name/Test%20Session").await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    // Create a session
-    let payload = json!({
-        "name": "test_session",
-        "display_name": "Test Session"
-    });
+        let session: SessionResponse = response.json();
+        assert_eq!(session.display_name, Some("Test Session".to_string()));
+    }
+);
 
-    server.post("/sessions").json(&payload).await;
+test_with!(
+    test_get_nonexistent_session_by_name,
+    create_test_server().await,
+    |server| {
+        let response = server.get("/sessions/by-name/nonexistent").await;
+        assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
+    }
+);
 
-    // Get session by display name
-    let response = server.get("/sessions/by-name/Test%20Session").await;
-    assert_eq!(response.status_code(), StatusCode::OK);
+test_with!(
+    test_delete_session_by_name,
+    create_test_server().await,
+    |server| {
+        // Create a session
+        let payload = json!({
+            "name": "test_session",
+            "display_name": "To Delete"
+        });
 
-    let session: SessionResponse = response.json();
-    assert_eq!(session.display_name, Some("Test Session".to_string()));
-}
+        let create_response = server.post("/sessions").json(&payload).await;
+        let session: SessionResponse = create_response.json();
 
-#[tokio::test]
-async fn test_get_nonexistent_session_by_name() {
-    let server = create_test_server().await;
+        // Delete the session by name
+        let response = server.delete("/sessions/by-name/To%20Delete").await;
+        assert_eq!(response.status_code(), StatusCode::OK);
 
-    let response = server.get("/sessions/by-name/nonexistent").await;
-    assert_eq!(response.status_code(), StatusCode::NOT_FOUND);
-}
+        // Verify it's deleted
+        let get_response = server.get(&format!("/sessions/{}", session.id)).await;
+        assert_eq!(get_response.status_code(), StatusCode::NOT_FOUND);
+    }
+);
 
-#[tokio::test]
-async fn test_delete_session_by_name() {
-    let server = create_test_server().await;
+test_with!(
+    test_invalid_json_payload,
+    create_test_server().await,
+    |server| {
+        let response = server.post("/sessions").text("invalid json").await;
+        assert_eq!(response.status_code(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
+    }
+);
 
-    // Create a session
-    let payload = json!({
-        "name": "test_session",
-        "display_name": "To Delete"
-    });
+test_with!(
+    test_missing_required_field,
+    create_test_server().await,
+    |server| {
+        let payload = json!({
+            "display_name": "No Name Session"
+        });
 
-    let create_response = server.post("/sessions").json(&payload).await;
-    let session: SessionResponse = create_response.json();
-
-    // Delete the session by name
-    let response = server.delete("/sessions/by-name/To%20Delete").await;
-    assert_eq!(response.status_code(), StatusCode::OK);
-
-    // Verify it's deleted
-    let get_response = server.get(&format!("/sessions/{}", session.id)).await;
-    assert_eq!(get_response.status_code(), StatusCode::NOT_FOUND);
-}
-
-#[tokio::test]
-async fn test_invalid_json_payload() {
-    let server = create_test_server().await;
-
-    let response = server.post("/sessions").text("invalid json").await;
-    assert_eq!(response.status_code(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
-}
-
-#[tokio::test]
-async fn test_missing_required_field() {
-    let server = create_test_server().await;
-
-    let payload = json!({
-        "display_name": "No Name Session"
-    });
-
-    let response = server.post("/sessions").json(&payload).await;
-    assert_eq!(response.status_code(), StatusCode::UNPROCESSABLE_ENTITY);
-}
+        let response = server.post("/sessions").json(&payload).await;
+        assert_eq!(response.status_code(), StatusCode::UNPROCESSABLE_ENTITY);
+    }
+);

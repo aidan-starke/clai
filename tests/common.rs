@@ -3,6 +3,17 @@ use migration::{Migrator, MigratorTrait};
 use sea_orm::{Database, DatabaseConnection};
 use tempfile::NamedTempFile;
 
+#[macro_export]
+macro_rules! test_with {
+    ($test_name:ident, $get_item:expr, |$item:ident| $test_body:block) => {
+        #[tokio::test]
+        async fn $test_name() {
+            let $item = $get_item;
+            $test_body
+        }
+    };
+}
+
 #[async_trait]
 pub trait Get {
     async fn get() -> &'static Self;
