@@ -10,11 +10,6 @@ CLAI is a Rust-based CLI chat application for interacting with Claude AI. It fea
 cargo run                    # Run client (auto-starts server on port 3500)
 cargo run -- --server        # Run server only
 
-# Database management
-diesel migration run         # Apply pending migrations
-diesel setup                 # Initialize database from scratch
-diesel migration generate NAME  # Create new migration
-
 # Environment setup
 # Create a .env file in the project root with:
 # ANTHROPIC_API_KEY=sk-...  # Required for Claude AI integration

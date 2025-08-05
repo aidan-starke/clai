@@ -16,9 +16,8 @@ cargo check                  # Type check without building
 cargo fmt                    # Format code
 
 # Database management
-diesel migration run         # Apply pending migrations
-diesel setup                 # Initialize database from scratch
-diesel migration generate NAME  # Create new migration
+# Database migrations run automatically on startup using SeaORM
+# No manual migration commands needed
 
 # Environment setup
 # Create a .env file in the project root with:
@@ -76,7 +75,7 @@ Custom terminal UI with:
 ## Build Requirements
 
 - **Rust toolchain**: Nightly (required for `iter_map_windows` feature)
-- **Diesel CLI**: For database migrations
+- **SeaORM**: Database migrations are handled automatically
 - **SQLite**: Database backend
 - **Anthropic API key**: For Claude AI integration
 

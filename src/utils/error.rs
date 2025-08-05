@@ -5,7 +5,7 @@ use thiserror::Error;
 pub enum ClaiError {
     /// Database-related errors
     #[error("Database error: {0}")]
-    Database(#[from] diesel::result::Error),
+    Database(#[from] sea_orm::DbErr),
 
     /// Network/HTTP client errors
     #[error("Network error: {0}")]
@@ -62,7 +62,7 @@ pub type Result<T> = std::result::Result<T, ClaiError>;
 impl From<ClaiError> for axum::http::StatusCode {
     fn from(error: ClaiError) -> Self {
         match error {
-            ClaiError::Database(diesel::result::Error::NotFound) => {
+            ClaiError::Database(sea_orm::DbErr::RecordNotFound(_)) => {
                 axum::http::StatusCode::NOT_FOUND
             }
             ClaiError::Database(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,

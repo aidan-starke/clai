@@ -107,7 +107,7 @@ pub async fn ensure_server_running() -> Result<()> {
 pub fn cleanup_old_sessions() {
     tokio::spawn(async {
         tracing::info!("Starting background database cleanup...");
-        match ClaiDb::cleanup_old_sessions() {
+        match ClaiDb::get().cleanup_old_sessions().await {
             Ok(deleted_count) => {
                 if deleted_count > 0 {
                     tracing::info!("Cleaned up {} old database records", deleted_count);

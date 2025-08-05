@@ -29,8 +29,8 @@ macro_rules! handle_db_operation {
         match $db_op {
             Ok(value) => value,
             Err(e) => {
-                if let $crate::error::ClaiError::Database(ref diesel_err) = e {
-                    tracing::error!("Database error during {}: {}", $operation, diesel_err);
+                if let $crate::error::ClaiError::Database(ref db_err) = e {
+                    tracing::error!("Database error during {}: {}", $operation, db_err);
                 } else {
                     tracing::error!("Error during {}: {}", $operation, e);
                 }

@@ -40,7 +40,7 @@ fn default_server_url() -> String {
 }
 
 fn default_database_url() -> String {
-    "clai.db".to_string()
+    "sqlite://clai.db".to_string()
 }
 
 fn default_server_host() -> String {

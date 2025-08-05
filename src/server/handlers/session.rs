@@ -25,9 +25,11 @@ pub async fn create_session(
 ) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Creating new session with name: {}", payload.name);
 
+    let db = ClaiDb::get();
     let session = handle_db_operation!(
         "create session",
-        ClaiDb::create_session(&payload.name, payload.display_name.as_deref())
+        db.create_session(&payload.name, payload.display_name.as_deref())
+            .await
     );
 
     info!(
@@ -44,10 +46,11 @@ pub async fn create_session(
 pub async fn get_last_session() -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting last session");
 
-    let session = handle_db_operation!("get last session", ClaiDb::get_last_session());
+    let db = ClaiDb::get();
+    let session = handle_db_operation!("get last session", db.get_last_session().await);
 
     // Update timestamp to mark as recently accessed
-    if let Err(e) = ClaiDb::update_session_timestamp(session.id) {
+    if let Err(e) = db.update_session_timestamp(session.id).await {
         warn!("Failed to update session timestamp: {}", e);
     }
 
@@ -64,12 +67,13 @@ pub async fn get_session_by_name(
 ) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by name: {}", name);
 
-    let session = handle_db_operation!("get session by name", ClaiDb::get_session_by_name(&name));
+    let db = ClaiDb::get();
+    let session = handle_db_operation!("get session by name", db.get_session_by_name(&name).await);
 
     info!("Found session: {} (ID: {})", name, session.id);
 
     // Update timestamp to mark as recently accessed
-    if let Err(e) = ClaiDb::update_session_timestamp(session.id) {
+    if let Err(e) = db.update_session_timestamp(session.id).await {
         warn!("Failed to update session timestamp: {}", e);
     }
 
@@ -79,7 +83,8 @@ pub async fn get_session_by_name(
 pub async fn list_sessions() -> Result<JsonResponse<Vec<SessionResponse>>, ClaiError> {
     info!("Listing named sessions");
 
-    let sessions = handle_db_operation!("list sessions", ClaiDb::list_named_sessions());
+    let db = ClaiDb::get();
+    let sessions = handle_db_operation!("list sessions", db.list_named_sessions().await);
 
     let response: Vec<SessionResponse> = sessions
         .into_iter()
@@ -102,7 +107,8 @@ pub async fn get_session_by_id(
 ) -> Result<JsonResponse<SessionResponse>, ClaiError> {
     info!("Getting session by ID: {}", session_id);
 
-    let session = handle_db_operation!("get session by id", ClaiDb::get_session_by_id(session_id));
+    let db = ClaiDb::get();
+    let session = handle_db_operation!("get session by id", db.get_session_by_id(session_id).await);
 
     info!("Found session: ID {}, name: {}", session_id, session.name);
 
@@ -119,9 +125,11 @@ pub async fn save_session(
         session_id, payload.display_name
     );
 
+    let db = ClaiDb::get();
     let session = handle_db_operation!(
         "save session",
-        ClaiDb::update_session_display_name(session_id, &payload.display_name)
+        db.update_session_display_name(session_id, &payload.display_name)
+            .await
     );
 
     info!("Saved session {} as '{}'", session_id, payload.display_name);
@@ -138,9 +146,11 @@ pub async fn set_role(
         session_id, payload.role
     );
 
+    let db = ClaiDb::get();
     let session = handle_db_operation!(
         "set session role",
-        ClaiDb::update_session_role(session_id, payload.role.as_deref())
+        db.update_session_role(session_id, payload.role.as_deref())
+            .await
     );
 
     info!("Updated session {} role to: {:?}", session_id, payload.role);
@@ -157,9 +167,10 @@ pub async fn set_model(
         session_id, payload.model
     );
 
+    let db = ClaiDb::get();
     let session = handle_db_operation!(
         "set session model",
-        ClaiDb::update_session_model(session_id, &payload.model)
+        db.update_session_model(session_id, &payload.model).await
     );
 
     info!("Updated session {} model to: {}", session_id, payload.model);
@@ -171,7 +182,8 @@ pub async fn set_model(
 pub async fn delete_session(Path(name): Path<String>) -> Result<JsonResponse<()>, ClaiError> {
     info!("Deleting session by name: {}", name);
 
-    handle_db_operation!("delete session", ClaiDb::delete_session_by_name(&name));
+    let db = ClaiDb::get();
+    handle_db_operation!("delete session", db.delete_session_by_name(&name).await);
 
     info!("Successfully deleted session '{}'", name);
 

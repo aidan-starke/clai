@@ -14,7 +14,7 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
     info!("clai server starting...");
 
     // Initialize database and run migrations
-    ClaiDb::init()?;
+    ClaiDb::init().await?;
 
     utils::cleanup_old_sessions();
 

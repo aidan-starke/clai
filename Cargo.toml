@@ -11,13 +11,35 @@ path = "src/main.rs"
 name = "clai"
 path = "src/lib.rs"
 
+[workspace]
+members = [".", "entity", "migration"]
+
+[workspace.dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+sea-orm = { version = "1.1", features = [
+	"sqlx-sqlite",
+	"runtime-tokio-rustls",
+	"macros",
+	"chrono",
+	"debug-print",
+] }
+
 [dependencies]
+entity = { path = "entity" }
+migration = { path = "migration" }
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
-diesel = { version = "2.1", features = ["sqlite", "chrono"] }
-diesel_migrations = "2.1"
+sea-orm = { version = "1.1", features = [
+	"sqlx-sqlite",
+	"runtime-tokio-rustls",
+	"macros",
+	"chrono",
+	"debug-print",
+] }
+sea-orm-migration = "1.1"
 chrono = { version = "0.4", features = ["serde"] }
 axum = "0.8"
 clap = { version = "4.0", features = ["derive"] }
@@ -32,11 +54,6 @@ envy = "0.4.2"
 dotenv = "0.15.0"
 
 [dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.8"
 axum-test = "17.3.0"
-proc-macro2 = "1.0.95"
-quote = "1.0.40"
-syn = "2.0.104"
-tempfile = "3.20.0"
-tokio-test = "0.4.4"
-test_macros = { path = "test_macros" }
-timewarp = "0.4.0"

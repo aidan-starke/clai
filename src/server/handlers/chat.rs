@@ -52,9 +52,10 @@ pub async fn chat(
 
     let client = reqwest::Client::new();
 
-    let session = handle_db_operation!("get session info", ClaiDb::get_session_by_id(session_id));
+    let db = ClaiDb::get();
+    let session = handle_db_operation!("get session info", db.get_session_by_id(session_id).await);
 
-    let mut messages = match ClaiDb::get_session_messages(session_id) {
+    let mut messages = match db.get_session_messages(session_id).await {
         Ok(msgs) => {
             let mut claude_messages = Vec::new();
             for msg in msgs {
@@ -121,11 +122,12 @@ pub async fn chat(
 
     handle_db_operation!(
         "store user message",
-        ClaiDb::create_message(session_id, "user", &payload.message)
+        db.create_message(session_id, "user", &payload.message)
+            .await
     );
     handle_db_operation!(
         "store assistant message",
-        ClaiDb::create_message(session_id, "assistant", &text)
+        db.create_message(session_id, "assistant", &text).await
     );
 
     info!(
