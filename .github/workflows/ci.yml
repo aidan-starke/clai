@@ -33,7 +33,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Check code compiles and tests pass
-        run: cargo test -- --test-threads=1
+        run: cargo test
 
       - name: Run cargo fmt
         run: cargo fmt

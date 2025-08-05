@@ -15,7 +15,7 @@ impl IntoResponse for ClaiError {
     fn into_response(self) -> Response {
         let error_message = self.to_string();
         tracing::error!("Handler error: {}", error_message);
-        
+
         let status_code: StatusCode = self.into();
         (status_code, error_message).into_response()
     }
