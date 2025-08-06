@@ -75,3 +75,14 @@ impl From<ClaiError> for axum::http::StatusCode {
         }
     }
 }
+
+// Convert ClaiError to axum Response for HTTP handlers
+impl axum::response::IntoResponse for ClaiError {
+    fn into_response(self) -> axum::response::Response {
+        let error_message = self.to_string();
+        tracing::error!("Handler error: {}", error_message);
+
+        let status_code: axum::http::StatusCode = self.into();
+        (status_code, error_message).into_response()
+    }
+}

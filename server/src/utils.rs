@@ -1,6 +1,7 @@
-use crate::error::ClaiError;
+use crate::db::ClaiDb;
+use common::error::ClaiError;
 use reqwest::Response;
-use tracing::error;
+use tracing::{error, info};
 
 pub struct HttpUtils;
 
@@ -30,4 +31,22 @@ impl HttpUtils {
             ClaiError::Network(e)
         }
     }
+}
+
+pub fn cleanup_old_sessions() {
+    tokio::spawn(async {
+        info!("Starting background database cleanup...");
+        match ClaiDb::get().cleanup_old_sessions().await {
+            Ok(deleted_count) => {
+                if deleted_count > 0 {
+                    info!("Cleaned up {} old database records", deleted_count);
+                } else {
+                    info!("No old sessions to clean up");
+                }
+            }
+            Err(e) => {
+                error!("Failed to cleanup old sessions: {}", e);
+            }
+        }
+    });
 }

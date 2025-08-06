@@ -1,0 +1,21 @@
+[package]
+name = "common"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "common"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+envy = { workspace = true }
+dotenv = { workspace = true }
+reqwest = { workspace = true }
+axum = { workspace = true }
+sea-orm = { workspace = true }
+tracing = { workspace = true }

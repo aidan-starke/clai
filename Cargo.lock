@@ -615,6 +615,7 @@ dependencies = [
  "axum-test",
  "chrono",
  "clap",
+ "common",
  "console",
  "dotenv",
  "entity",
@@ -626,6 +627,7 @@ dependencies = [
  "sea-orm-migration",
  "serde",
  "serde_json",
+ "server",
  "tempfile",
  "thiserror 1.0.69",
  "tokio",
@@ -681,6 +683,22 @@ name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
+
+[[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "dotenv",
+ "envy",
+ "reqwest",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+]
 
 [[package]]
 name = "concurrent-queue"
@@ -2821,6 +2839,30 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "common",
+ "dotenv",
+ "entity",
+ "envy",
+ "migration",
+ "reqwest",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "urlencoding",
+ "uuid",
 ]
 
 [[package]]

@@ -1,4 +1,3 @@
-#![feature(iter_map_windows)]
 use clap::Parser;
 use commands::CommandHandler;
 use console::style;
@@ -6,13 +5,11 @@ use input::InputReader;
 use sessions::SessionManager;
 
 mod commands;
-mod db;
 mod input;
-mod server;
 mod sessions;
 mod utils;
 
-pub use utils::{config, constants, error, types};
+use common::{config, error};
 
 #[derive(Parser)]
 #[command(name = "clai")]
@@ -26,7 +23,6 @@ struct Cli {
 async fn main() -> error::Result<()> {
     let cli = Cli::parse();
 
-    // Handle server mode
     if cli.server {
         return server::run_server(true).await;
     } else {

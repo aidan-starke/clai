@@ -1,11 +1,11 @@
-pub mod common;
+pub mod utils;
 
 use async_trait::async_trait;
 use chrono::Utc;
-use common::{Get, TestDb};
 use entity::{messages, sessions};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use tokio::sync::OnceCell;
+use utils::{Get, TestDb};
 
 static TEST_DB: OnceCell<TestDb> = OnceCell::const_new();
 

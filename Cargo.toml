@@ -12,23 +12,10 @@ name = "clai"
 path = "src/lib.rs"
 
 [workspace]
-members = [".", "entity", "migration"]
+members = [".", "entity", "migration", "server", "common"]
 
 [workspace.dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
-sea-orm = { version = "1.1", features = [
-	"sqlx-sqlite",
-	"runtime-tokio-rustls",
-	"macros",
-	"chrono",
-	"debug-print",
-] }
-
-[dependencies]
-entity = { path = "entity" }
-migration = { path = "migration" }
-tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
@@ -40,7 +27,7 @@ sea-orm = { version = "1.1", features = [
 	"debug-print",
 ] }
 sea-orm-migration = "1.1"
-chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1.0", features = ["full"] }
 axum = "0.8"
 clap = { version = "4.0", features = ["derive"] }
 reqwest = { version = "0.11", features = ["json"] }
@@ -52,9 +39,38 @@ indicatif = "0.18.0"
 console = "0.16.0"
 envy = "0.4.2"
 dotenv = "0.15.0"
-
-[dev-dependencies]
+async-std = { version = "1", features = ["attributes", "tokio1"] }
 tokio-test = "0.4"
 tempfile = "3.8"
 axum-test = "17.3.0"
 async-trait = "0.1.88"
+
+[dependencies]
+entity = { path = "entity" }
+migration = { path = "migration" }
+server = { path = "server" }
+common = { path = "common" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+sea-orm = { workspace = true }
+sea-orm-migration = { workspace = true }
+chrono = { workspace = true }
+axum = { workspace = true }
+clap = { workspace = true }
+reqwest = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+urlencoding = { workspace = true }
+indicatif = { workspace = true }
+console = { workspace = true }
+envy = { workspace = true }
+dotenv = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+tempfile = { workspace = true }
+axum-test = { workspace = true }
+async-trait = { workspace = true }

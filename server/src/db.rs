@@ -8,7 +8,7 @@ use sea_orm::{
     QueryOrder, Set,
 };
 
-use crate::{
+use common::{
     config::Config,
     error::{ClaiError, Result},
 };

@@ -1,12 +1,13 @@
-pub mod common;
+pub mod utils;
 
 use async_trait::async_trait;
 use axum::{http::StatusCode, Router};
 use axum_test::TestServer;
-use clai::{db::ClaiDb, server::handlers, types::*};
-use common::{Get, TestDb};
+use common::types::*;
 use serde_json::json;
+use server::{db::ClaiDb, handlers};
 use tokio::sync::OnceCell;
+use utils::{Get, TestDb};
 
 static TEST_DB: OnceCell<TestDb> = OnceCell::const_new();
 

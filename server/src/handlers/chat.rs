@@ -1,15 +1,14 @@
-use crate::{
-    config::Config,
-    constants::{CLAUDE_MAX_TOKENS, DEFAULT_MODEL},
-    db::ClaiDb,
-    error::ClaiError,
-    handle_db_operation,
-    server::HttpUtils,
-    types::*,
-};
+use crate::handle_db_operation;
+use crate::{db::ClaiDb, utils::HttpUtils};
 use axum::{
     extract::{Json, Path},
     response::Json as JsonResponse,
+};
+use common::{
+    config::Config,
+    constants::{CLAUDE_MAX_TOKENS, DEFAULT_MODEL},
+    error::ClaiError,
+    types::*,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};

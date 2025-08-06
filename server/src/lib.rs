@@ -1,10 +1,16 @@
+pub mod db;
+pub mod handlers;
+mod macros;
+mod utils;
+
 use axum::{
     routing::{get, post, put},
     Router,
 };
+use db::ClaiDb;
 use tracing::info;
 
-use crate::{config::Config, db::ClaiDb, error::Result, server::handlers, utils};
+use common::{config::Config, error::Result};
 
 pub async fn run_server(debug_mode: bool) -> Result<()> {
     if debug_mode {

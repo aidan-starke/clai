@@ -1,4 +1,5 @@
-use crate::{constants::COMMANDS, utils};
+use crate::utils;
+use common::constants::COMMANDS;
 use console::{style, Key, Term};
 use std::io::Error;
 

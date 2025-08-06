@@ -1,8 +1,9 @@
-use crate::{db::ClaiDb, error::ClaiError, handle_db_operation, types::*, utils};
+use crate::{db::ClaiDb, handle_db_operation, utils};
 use axum::{
     extract::{Json, Path},
     response::Json as JsonResponse,
 };
+use common::{error::ClaiError, types::*};
 use tracing::{info, warn};
 
 /// Creates a JSON response from a session model.

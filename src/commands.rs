@@ -1,8 +1,5 @@
-use crate::{
-    constants::{COMMANDS, DEFAULT_MODEL},
-    sessions::SessionManager,
-    utils, write_line, write_spaced,
-};
+use crate::{sessions::SessionManager, utils, write_line, write_spaced};
+use common::constants::{COMMANDS, DEFAULT_MODEL};
 
 pub struct CommandHandler {
     session_manager: SessionManager,
