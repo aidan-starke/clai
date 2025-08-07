@@ -57,6 +57,7 @@ entity = { path = "entity" }
 migration = { path = "migration" }
 server = { path = "server" }
 common = { path = "common" }
+mcp = { path = "mcp" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -6,3 +6,7 @@ edition = "2024"
 [dependencies]
 rmcp = { workspace = true }
 tokio = { workspace = true }
+common = { path = "../common" }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

@@ -19,3 +19,5 @@ reqwest = { workspace = true }
 axum = { workspace = true }
 sea-orm = { workspace = true }
 tracing = { workspace = true }
+rmcp = { workspace = true }
+

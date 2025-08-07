@@ -621,6 +621,7 @@ dependencies = [
  "entity",
  "envy",
  "indicatif",
+ "mcp",
  "migration",
  "reqwest 0.11.27",
  "sea-orm",
@@ -693,6 +694,7 @@ dependencies = [
  "dotenv",
  "envy",
  "reqwest 0.11.27",
+ "rmcp",
  "sea-orm",
  "serde",
  "serde_json",
@@ -1851,8 +1853,12 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 name = "mcp"
 version = "0.1.0"
 dependencies = [
+ "common",
  "rmcp",
+ "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

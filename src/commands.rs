@@ -1,13 +1,18 @@
 use crate::{sessions::SessionManager, utils, write_line, write_spaced};
 use common::constants::{COMMANDS, DEFAULT_MODEL};
+use mcp::Client as McpClient;
 
 pub struct CommandHandler {
+    mcp_client: McpClient,
     session_manager: SessionManager,
 }
 
 impl CommandHandler {
-    pub fn new(session_manager: SessionManager) -> Self {
-        Self { session_manager }
+    pub fn new(session_manager: SessionManager, mcp_client: McpClient) -> Self {
+        Self {
+            mcp_client,
+            session_manager,
+        }
     }
 
     // ===== Command Dispatch =====
@@ -31,6 +36,7 @@ impl CommandHandler {
             cmd if cmd.starts_with("/resume ") => self.handle_resume(cmd).await,
             cmd if cmd.starts_with("/role") => self.handle_role(cmd).await,
             cmd if cmd.starts_with("/model") => self.handle_model(cmd).await,
+            cmd if cmd.starts_with("/mcp") => self.handle_mcp(cmd).await,
             _ => panic!("Unhandled command: {}", message),
         }
     }
@@ -299,5 +305,15 @@ impl CommandHandler {
                 );
             }
         }
+    }
+
+    // ===== MCP =====
+    async fn handle_mcp(&self, _cmd: &str) {
+        println!("MCP command received, incrementing...");
+        self.mcp_client
+            .increment()
+            .await
+            .expect("Failed to increment MCP");
+        println!("MCP command received, incremented...");
     }
 }
