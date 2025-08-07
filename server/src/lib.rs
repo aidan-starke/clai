@@ -7,10 +7,10 @@ use axum::{
     routing::{get, post, put},
     Router,
 };
-use db::ClaiDb;
-use tracing::info;
-
 use common::{config::Config, error::Result};
+use db::ClaiDb;
+use mcp::Server as McpServer;
+use tracing::info;
 
 pub async fn run_server(debug_mode: bool) -> Result<()> {
     if debug_mode {
@@ -40,7 +40,8 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
         .route("/sessions/{id}/role", put(handlers::session::set_role))
         .route("/sessions/{id}/model", put(handlers::session::set_model))
         .route("/sessions/{id}/chat", post(handlers::chat::chat))
-        .route("/models", get(handlers::models::get_models));
+        .route("/models", get(handlers::models::get_models))
+        .nest_service("/mcp", McpServer::get_server());
 
     let config = Config::load()?;
     let listener = tokio::net::TcpListener::bind(config.server_bind_address()).await?;

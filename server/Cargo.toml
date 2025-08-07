@@ -11,6 +11,7 @@ path = "src/lib.rs"
 [dependencies]
 common = { path = "../common" }
 entity = { path = "../entity" }
+mcp = { path = "../mcp" }
 migration = { path = "../migration" }
 tokio = { workspace = true }
 serde = { workspace = true }

@@ -44,6 +44,13 @@ tokio-test = "0.4"
 tempfile = "3.8"
 axum-test = "17.3.0"
 async-trait = "0.1.88"
+rmcp = { version = "0.4.0", features = [
+	"client",
+	"server",
+	"reqwest",
+	"transport-streamable-http-client",
+	"transport-streamable-http-server",
+] }
 
 [dependencies]
 entity = { path = "entity" }

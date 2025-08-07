@@ -1,27 +1,40 @@
 use rmcp::{
-    ErrorData as McpError, ServiceExt, handler::server::router::tool::ToolRouter, model::*, tool,
-    tool_handler, tool_router,
+    ErrorData as McpError, ServerHandler,
+    handler::server::router::tool::ToolRouter,
+    model::*,
+    tool, tool_handler, tool_router,
+    transport::{
+        StreamableHttpServerConfig, StreamableHttpService,
+        streamable_http_server::session::local::LocalSessionManager,
+    },
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-fn stdio() -> (tokio::io::Stdin, tokio::io::Stdout) {
-    (tokio::io::stdin(), tokio::io::stdout())
-}
-
 #[derive(Clone)]
-pub struct Counter {
+pub struct Server {
     counter: Arc<Mutex<i32>>,
     tool_router: ToolRouter<Self>,
 }
 
 #[tool_router]
-impl Counter {
+impl Server {
     fn new() -> Self {
         Self {
             counter: Arc::new(Mutex::new(0)),
             tool_router: Self::tool_router(),
         }
+    }
+
+    pub fn get_server() -> StreamableHttpService<Self> {
+        StreamableHttpService::new(
+            || Ok(Self::new()),
+            LocalSessionManager::default().into(),
+            StreamableHttpServerConfig {
+                stateful_mode: true,
+                sse_keep_alive: None,
+            },
+        )
     }
 
     #[tool(description = "Increment the counter by 1")]
@@ -43,7 +56,7 @@ impl Counter {
 }
 
 #[tool_handler]
-impl rmcp::ServerHandler for Counter {
+impl ServerHandler for Server {
     fn get_info(&self) -> ServerInfo {
         ServerInfo {
             instructions: Some("A simple calculator".into()),
@@ -51,13 +64,4 @@ impl rmcp::ServerHandler for Counter {
             ..Default::default()
         }
     }
-}
-
-pub async fn run_server() -> Result<(), Box<dyn std::error::Error>> {
-    let service = Counter::new().serve(stdio()).await.inspect_err(|e| {
-        println!("Error starting server: {}", e);
-    })?;
-    service.waiting().await?;
-
-    Ok(())
 }
