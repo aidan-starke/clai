@@ -1,5 +1,5 @@
-pub const COMMANDS: [&str; 8] = [
-    "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role", "/model",
+pub const COMMANDS: [&str; 9] = [
+    "/clear", "/new", "/save", "/delete", "/list", "/resume", "/role", "/model", "/mcp",
 ];
 
 pub const CLAUDE_MAX_TOKENS: i32 = 1000;

@@ -15,10 +15,10 @@ pub struct SessionManager {
 impl SessionManager {
     // ===== Construction & State Management =====
 
-    pub fn new(server_url: String) -> Self {
+    pub fn new(server_url: &str) -> Self {
         Self {
-            server_url,
             client: Client::new(),
+            server_url: server_url.to_string(),
             current_session: Arc::new(Mutex::new(None)),
         }
     }

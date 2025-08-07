@@ -12,7 +12,7 @@ name = "clai"
 path = "src/lib.rs"
 
 [workspace]
-members = [".", "entity", "migration", "server", "common"]
+members = [".", "entity", "migration", "server", "common", "mcp"]
 
 [workspace.dependencies]
 chrono = { version = "0.4", features = ["serde"] }
@@ -44,12 +44,20 @@ tokio-test = "0.4"
 tempfile = "3.8"
 axum-test = "17.3.0"
 async-trait = "0.1.88"
+rmcp = { version = "0.4.0", features = [
+	"client",
+	"server",
+	"reqwest",
+	"transport-streamable-http-client",
+	"transport-streamable-http-server",
+] }
 
 [dependencies]
 entity = { path = "entity" }
 migration = { path = "migration" }
 server = { path = "server" }
 common = { path = "common" }
+mcp = { path = "mcp" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

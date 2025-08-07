@@ -11,6 +11,8 @@ mod utils;
 
 use common::{config, error};
 
+use mcp::Client as McpClient;
+
 #[derive(Parser)]
 #[command(name = "clai")]
 #[command(about = "Command Line Artificial Interface (CLAI)")]
@@ -29,12 +31,13 @@ async fn main() -> error::Result<()> {
         utils::ensure_server_running().await?;
     }
 
-    let config = config::Config::load()?;
+    let server_url = config::Config::load()?.clai_server_url;
 
-    let session_manager = SessionManager::new(config.clai_server_url);
+    let session_manager = SessionManager::new(&server_url);
     let (session_id, session_name) = session_manager.init().await?;
 
-    let command_handler = CommandHandler::new(session_manager.clone());
+    let command_handler =
+        CommandHandler::new(session_manager.clone(), McpClient::new(&server_url).await);
 
     utils::clear_screen()?;
 

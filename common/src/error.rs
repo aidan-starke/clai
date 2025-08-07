@@ -30,24 +30,25 @@ pub enum ClaiError {
     /// Serialization errors
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
+
+    /// MCP protocol errors
+    #[error("MCP protocol error: {0}")]
+    McpProtocol(#[from] rmcp::ServiceError),
 }
 
 impl ClaiError {
-    /// Create a new server error
     pub fn server<S: Into<String>>(message: S) -> Self {
         ClaiError::Server {
             message: message.into(),
         }
     }
 
-    /// Create a new session error
     pub fn session<S: Into<String>>(message: S) -> Self {
         ClaiError::Session {
             message: message.into(),
         }
     }
 
-    /// Create a new configuration error
     pub fn config<S: Into<String>>(message: S) -> Self {
         ClaiError::Config {
             message: message.into(),
@@ -55,28 +56,22 @@ impl ClaiError {
     }
 }
 
-/// Convenient Result type alias
 pub type Result<T> = std::result::Result<T, ClaiError>;
 
-/// Convert ClaiError to HTTP status codes for server responses
 impl From<ClaiError> for axum::http::StatusCode {
     fn from(error: ClaiError) -> Self {
         match error {
             ClaiError::Database(sea_orm::DbErr::RecordNotFound(_)) => {
                 axum::http::StatusCode::NOT_FOUND
             }
-            ClaiError::Database(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             ClaiError::Network(_) => axum::http::StatusCode::BAD_GATEWAY,
-            ClaiError::Server { .. } => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             ClaiError::Session { .. } => axum::http::StatusCode::BAD_REQUEST,
-            ClaiError::Terminal(_) => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            ClaiError::Config { .. } => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             ClaiError::Serialization(_) => axum::http::StatusCode::BAD_REQUEST,
+            _ => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
 
-// Convert ClaiError to axum Response for HTTP handlers
 impl axum::response::IntoResponse for ClaiError {
     fn into_response(self) -> axum::response::Response {
         let error_message = self.to_string();
