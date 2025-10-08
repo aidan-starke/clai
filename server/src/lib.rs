@@ -8,6 +8,9 @@ use axum::{
     Router,
 };
 use db::ClaiDb;
+use tower_governor::{
+    governor::GovernorConfigBuilder, key_extractor::GlobalKeyExtractor, GovernorLayer,
+};
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
@@ -49,6 +52,17 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
             axum::http::header::AUTHORIZATION,
         ]);
 
+    // Configure rate limiting: Global rate limit (not per-IP)
+    // 1 request every 3 seconds, with burst of 5
+    let governor_conf = std::sync::Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(3)
+            .burst_size(5)
+            .key_extractor(GlobalKeyExtractor)
+            .finish()
+            .unwrap(),
+    );
+
     let app = Router::new()
         .route("/health", get(handlers::health))
         .route("/sessions", post(handlers::session::create_session))
@@ -66,6 +80,7 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
         .route("/sessions/{id}/model", put(handlers::session::set_model))
         .route("/sessions/{id}/chat", post(handlers::chat::chat))
         .route("/models", get(handlers::models::get_models))
+        .layer(GovernorLayer::new(governor_conf))
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind(config.server_bind_address()).await?;

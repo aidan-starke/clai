@@ -28,3 +28,4 @@ urlencoding = { workspace = true }
 envy = { workspace = true }
 dotenv = { workspace = true }
 tower-http = { version = "0.6.6", features = ["cors"] }
+tower_governor = "0.8.0"
