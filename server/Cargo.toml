@@ -27,3 +27,4 @@ uuid = { workspace = true }
 urlencoding = { workspace = true }
 envy = { workspace = true }
 dotenv = { workspace = true }
+tower-http = { version = "0.6.6", features = ["cors"] }

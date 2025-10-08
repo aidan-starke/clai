@@ -21,6 +21,10 @@ pub struct Config {
     /// Server port
     #[serde(default = "default_server_port")]
     pub clai_server_port: u16,
+
+    /// Comma-separated list of allowed CORS origins
+    #[serde(default = "default_allowed_origins")]
+    pub allowed_origins: String,
 }
 
 impl Config {
@@ -49,4 +53,8 @@ fn default_server_host() -> String {
 
 fn default_server_port() -> u16 {
     3500
+}
+
+fn default_allowed_origins() -> String {
+    "http://localhost:5173".to_string()
 }
