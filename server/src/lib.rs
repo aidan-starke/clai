@@ -63,6 +63,12 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
             .unwrap(),
     );
 
+    // Rate-limited routes (Claude API calls)
+    let rate_limited_routes = Router::new()
+        .route("/sessions/{id}/chat", post(handlers::chat::chat))
+        .layer(GovernorLayer::new(governor_conf));
+
+    // Non-rate-limited routes
     let app = Router::new()
         .route("/health", get(handlers::health))
         .route("/sessions", post(handlers::session::create_session))
@@ -78,9 +84,8 @@ pub async fn run_server(debug_mode: bool) -> Result<()> {
         )
         .route("/sessions/{id}/role", put(handlers::session::set_role))
         .route("/sessions/{id}/model", put(handlers::session::set_model))
-        .route("/sessions/{id}/chat", post(handlers::chat::chat))
         .route("/models", get(handlers::models::get_models))
-        .layer(GovernorLayer::new(governor_conf))
+        .merge(rate_limited_routes)
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind(config.server_bind_address()).await?;
