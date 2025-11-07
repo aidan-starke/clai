@@ -40,7 +40,7 @@ impl Config {
 }
 
 fn default_server_url() -> String {
-    "http://localhost:3500".to_string()
+    "http://localhost:3510".to_string()
 }
 
 fn default_database_url() -> String {
